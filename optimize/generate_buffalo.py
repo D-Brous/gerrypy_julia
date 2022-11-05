@@ -10,7 +10,7 @@ from collections import OrderedDict
 import constants as consts
 from analyze.districts import *
 from data.buffalo_data.load import load_opt_data
-from optimize.center_selection import *
+from optimize.center_selection_buffalo import *
 from optimize.partition import *
 from optimize.tree import SHPNode
 from rules.political_boundaries.preservation_constraint import *
@@ -21,14 +21,13 @@ class DefaultCostFunction:
         self.lengths = lengths
 
     def get_costs(self, area_df, centers):
-        population = area_df.population.values
+        population = area_df.TOTAL_ADJ.values
         index = list(area_df.index)
         costs = self.lengths[np.ix_(centers, index)] * ((population / 1000) + 1)
 
         costs **= (1 + random.random())
         return {center: {index[bix]: cost for bix, cost in enumerate(costs[cix])}
                 for cix, center in enumerate(centers)}
-
 
 def flatten(container):
     for i in container:
@@ -78,9 +77,7 @@ class ColumnGenerator:
 
         self.state_abbrev = state_abbrev
 
-        print(state_df)
-
-        ideal_pop = state_df.population.values.sum() / config['n_districts']
+        ideal_pop = state_df.TOTAL_ADJ.values.sum() / config['n_districts']
         max_pop_variation = ideal_pop * config['population_tolerance']
 
         config['max_pop_variation'] = max_pop_variation
@@ -273,10 +270,8 @@ class ColumnGenerator:
 
         partition_IP, xs = make_partition_IP(costs,
                                              connectivity_sets,
-                                             area_df.population.to_dict(),
+                                             area_df.TOTAL_ADJ.to_dict(),
                                              pop_bounds)
-        if self.config['boundary_type'] == 'county':
-            self.model_factory.augment_model(partition_IP, xs, area_df.index.values, costs)
 
         partition_IP.Params.MIPGap = self.config['IP_gap_tol']
         partition_IP.update()
@@ -401,7 +396,6 @@ class ColumnGenerator:
                               n_interior, width, n_districts, save_time])
 
         json.dump(self.event_list, open(save_name + '.json', 'w'))
-
 
 if __name__ == '__main__':
     center_selection_config = {
