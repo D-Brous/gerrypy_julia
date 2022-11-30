@@ -1,0 +1,1739 @@
+generation_time,analysis_time,leaf_nodes,internal_nodes,n_plans
+28.84548020362854,0.0,"Node 3 
+is_root: False
+parent_id: 2
+n_districts: 1.0
+area_hash: 3064714485583958283
+id: 3
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 4 
+is_root: False
+parent_id: 2
+n_districts: 1.0
+area_hash: 279993045542932407
+id: 4
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 5 
+is_root: False
+parent_id: 2
+n_districts: 1.0
+area_hash: -4757154697720771934
+id: 5
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 6 
+is_root: False
+parent_id: 2
+n_districts: 1.0
+area_hash: 7177309619945047092
+id: 6
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 7 
+is_root: False
+parent_id: 2
+n_districts: 1.0
+area_hash: -1645620701616781927
+id: 7
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 8 
+is_root: False
+parent_id: 2
+n_districts: 1.0
+area_hash: -830923569935092014
+id: 8
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 9 
+is_root: False
+parent_id: 2
+n_districts: 1.0
+area_hash: -4346875826113479698
+id: 9
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 11 
+is_root: False
+parent_id: 10
+n_districts: 1.0
+area_hash: 903590566444610015
+id: 11
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 12 
+is_root: False
+parent_id: 10
+n_districts: 1.0
+area_hash: 7572039534898449197
+id: 12
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 13 
+is_root: False
+parent_id: 10
+n_districts: 1.0
+area_hash: -845576341232350688
+id: 13
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 14 
+is_root: False
+parent_id: 10
+n_districts: 1.0
+area_hash: 1953125636208827045
+id: 14
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 15 
+is_root: False
+parent_id: 10
+n_districts: 1.0
+area_hash: -4223072910293405224
+id: 15
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 16 
+is_root: False
+parent_id: 10
+n_districts: 1.0
+area_hash: -5596650407722936360
+id: 16
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 19 
+is_root: False
+parent_id: 1
+n_districts: 1.0
+area_hash: -315555982212565394
+id: 19
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 21 
+is_root: False
+parent_id: 20
+n_districts: 1.0
+area_hash: 1692116870738549029
+id: 21
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 23 
+is_root: False
+parent_id: 20
+n_districts: 1.0
+area_hash: -2374781391169502656
+id: 23
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 24 
+is_root: False
+parent_id: 20
+n_districts: 1.0
+area_hash: 6839734437996081785
+id: 24
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 25 
+is_root: False
+parent_id: 20
+n_districts: 1.0
+area_hash: 7487197447531477736
+id: 25
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 26 
+is_root: False
+parent_id: 22
+n_districts: 1.0
+area_hash: 8924112391861487922
+id: 26
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 27 
+is_root: False
+parent_id: 22
+n_districts: 1.0
+area_hash: 4784622901932173328
+id: 27
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 28 
+is_root: False
+parent_id: 22
+n_districts: 1.0
+area_hash: -6528536252929272010
+id: 28
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 29 
+is_root: False
+parent_id: 22
+n_districts: 1.0
+area_hash: -8393720755119959761
+id: 29
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 30 
+is_root: False
+parent_id: 18
+n_districts: 1.0
+area_hash: 3757699177880240527
+id: 30
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 31 
+is_root: False
+parent_id: 18
+n_districts: 1.0
+area_hash: 6209363865023782382
+id: 31
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 32 
+is_root: False
+parent_id: 18
+n_districts: 1.0
+area_hash: -3994663111749175832
+id: 32
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 33 
+is_root: False
+parent_id: 18
+n_districts: 1.0
+area_hash: 8947865757189699247
+id: 33
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 34 
+is_root: False
+parent_id: 17
+n_districts: 1.0
+area_hash: -2736972413076550254
+id: 34
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 35 
+is_root: False
+parent_id: 17
+n_districts: 1.0
+area_hash: 5083776878402643729
+id: 35
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 36 
+is_root: False
+parent_id: 17
+n_districts: 1.0
+area_hash: -8689157739775740062
+id: 36
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 37 
+is_root: False
+parent_id: 17
+n_districts: 1.0
+area_hash: -6515009795486205316
+id: 37
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 38 
+is_root: False
+parent_id: 0
+n_districts: 1.0
+area_hash: 8574526208428241476
+id: 38
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 44 
+is_root: False
+parent_id: 41
+n_districts: 1.0
+area_hash: 1186285032153095901
+id: 44
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 45 
+is_root: False
+parent_id: 41
+n_districts: 1.0
+area_hash: -7374258918128181066
+id: 45
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 46 
+is_root: False
+parent_id: 41
+n_districts: 1.0
+area_hash: 1154512684766941090
+id: 46
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 47 
+is_root: False
+parent_id: 41
+n_districts: 1.0
+area_hash: 3883288690401757324
+id: 47
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 48 
+is_root: False
+parent_id: 43
+n_districts: 1.0
+area_hash: -4405488616294723043
+id: 48
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 49 
+is_root: False
+parent_id: 43
+n_districts: 1.0
+area_hash: -8868489811550279514
+id: 49
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 50 
+is_root: False
+parent_id: 43
+n_districts: 1.0
+area_hash: -6501763260303085059
+id: 50
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 51 
+is_root: False
+parent_id: 43
+n_districts: 1.0
+area_hash: 7546559683153416383
+id: 51
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 52 
+is_root: False
+parent_id: 42
+n_districts: 1.0
+area_hash: 5179803761428880871
+id: 52
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 53 
+is_root: False
+parent_id: 42
+n_districts: 1.0
+area_hash: -4974971759320667138
+id: 53
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 54 
+is_root: False
+parent_id: 42
+n_districts: 1.0
+area_hash: -8312188381186583407
+id: 54
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 55 
+is_root: False
+parent_id: 42
+n_districts: 1.0
+area_hash: 6290842972397512292
+id: 55
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 56 
+is_root: False
+parent_id: 40
+n_districts: 1.0
+area_hash: -3288472349892299943
+id: 56
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 57 
+is_root: False
+parent_id: 40
+n_districts: 1.0
+area_hash: 5041530565583008659
+id: 57
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 58 
+is_root: False
+parent_id: 40
+n_districts: 1.0
+area_hash: 1563424781049145425
+id: 58
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 59 
+is_root: False
+parent_id: 40
+n_districts: 1.0
+area_hash: 6179365449134208452
+id: 59
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 60 
+is_root: False
+parent_id: 39
+n_districts: 1.0
+area_hash: -3929084318026149836
+id: 60
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 61 
+is_root: False
+parent_id: 39
+n_districts: 1.0
+area_hash: -9089168046783008835
+id: 61
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 62 
+is_root: False
+parent_id: 39
+n_districts: 1.0
+area_hash: -5550359140293511867
+id: 62
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 63 
+is_root: False
+parent_id: 39
+n_districts: 1.0
+area_hash: 1051452041480873684
+id: 63
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 67 
+is_root: False
+parent_id: 66
+n_districts: 1.0
+area_hash: -2672571029958742135
+id: 67
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 69 
+is_root: False
+parent_id: 66
+n_districts: 1.0
+area_hash: -4555021543092585553
+id: 69
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 70 
+is_root: False
+parent_id: 66
+n_districts: 1.0
+area_hash: -5134462028780017710
+id: 70
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 71 
+is_root: False
+parent_id: 66
+n_districts: 1.0
+area_hash: 1407104280395962051
+id: 71
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 72 
+is_root: False
+parent_id: 68
+n_districts: 1.0
+area_hash: 8543006833954694007
+id: 72
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 73 
+is_root: False
+parent_id: 68
+n_districts: 1.0
+area_hash: 3329230842496580035
+id: 73
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 74 
+is_root: False
+parent_id: 68
+n_districts: 1.0
+area_hash: 5541521132176241061
+id: 74
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 75 
+is_root: False
+parent_id: 68
+n_districts: 1.0
+area_hash: 8706686826129849997
+id: 75
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 76 
+is_root: False
+parent_id: 65
+n_districts: 1.0
+area_hash: -4603440187673679963
+id: 76
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 77 
+is_root: False
+parent_id: 65
+n_districts: 1.0
+area_hash: 1339219717669411392
+id: 77
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 78 
+is_root: False
+parent_id: 65
+n_districts: 1.0
+area_hash: -8220353494696514895
+id: 78
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 79 
+is_root: False
+parent_id: 65
+n_districts: 1.0
+area_hash: 4778719249501325053
+id: 79
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 81 
+is_root: False
+parent_id: 80
+n_districts: 1.0
+area_hash: -4958071991061544197
+id: 81
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 82 
+is_root: False
+parent_id: 80
+n_districts: 1.0
+area_hash: -5016744528317810349
+id: 82
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 83 
+is_root: False
+parent_id: 80
+n_districts: 1.0
+area_hash: -2576559465936022272
+id: 83
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 84 
+is_root: False
+parent_id: 80
+n_districts: 1.0
+area_hash: 1682880903675506380
+id: 84
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 85 
+is_root: False
+parent_id: 64
+n_districts: 1.0
+area_hash: -9060806404550496593
+id: 85
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 87 
+is_root: False
+parent_id: 64
+n_districts: 1.0
+area_hash: -2078557471891118099
+id: 87
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 89 
+is_root: False
+parent_id: 88
+n_districts: 1.0
+area_hash: 2984758471168120326
+id: 89
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 90 
+is_root: False
+parent_id: 88
+n_districts: 1.0
+area_hash: 5939223859909316676
+id: 90
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 91 
+is_root: False
+parent_id: 88
+n_districts: 1.0
+area_hash: 1044168261411445506
+id: 91
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 92 
+is_root: False
+parent_id: 88
+n_districts: 1.0
+area_hash: -999608883189940700
+id: 92
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 93 
+is_root: False
+parent_id: 86
+n_districts: 1.0
+area_hash: 6677580318995563902
+id: 93
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 94 
+is_root: False
+parent_id: 86
+n_districts: 1.0
+area_hash: -3215548363566408682
+id: 94
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 95 
+is_root: False
+parent_id: 86
+n_districts: 1.0
+area_hash: -6389983499398170698
+id: 95
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 96 
+is_root: False
+parent_id: 86
+n_districts: 1.0
+area_hash: 7539563855691352699
+id: 96
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 99 
+is_root: False
+parent_id: 98
+n_districts: 1.0
+area_hash: -2250300215767678459
+id: 99
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 100 
+is_root: False
+parent_id: 98
+n_districts: 1.0
+area_hash: 1677404547994597163
+id: 100
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 101 
+is_root: False
+parent_id: 98
+n_districts: 1.0
+area_hash: -3982338995765910497
+id: 101
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 102 
+is_root: False
+parent_id: 98
+n_districts: 1.0
+area_hash: 746534836506642897
+id: 102
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 106 
+is_root: False
+parent_id: 105
+n_districts: 1.0
+area_hash: 1869091762558547716
+id: 106
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 107 
+is_root: False
+parent_id: 105
+n_districts: 1.0
+area_hash: 1921431952319535807
+id: 107
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 108 
+is_root: False
+parent_id: 105
+n_districts: 1.0
+area_hash: 5621553064889593301
+id: 108
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 109 
+is_root: False
+parent_id: 105
+n_districts: 1.0
+area_hash: 1971513405059155623
+id: 109
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 110 
+is_root: False
+parent_id: 105
+n_districts: 1.0
+area_hash: -4826825314404563031
+id: 110
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 111 
+is_root: False
+parent_id: 105
+n_districts: 1.0
+area_hash: 8101853551223025930
+id: 111
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 112 
+is_root: False
+parent_id: 105
+n_districts: 1.0
+area_hash: 6998748797563300592
+id: 112
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 113 
+is_root: False
+parent_id: 105
+n_districts: 1.0
+area_hash: 6408953126811809345
+id: 113
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 114 
+is_root: False
+parent_id: 104
+n_districts: 1.0
+area_hash: -2071393598641599470
+id: 114
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 115 
+is_root: False
+parent_id: 104
+n_districts: 1.0
+area_hash: 9107515763221592742
+id: 115
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 116 
+is_root: False
+parent_id: 104
+n_districts: 1.0
+area_hash: 5434722458704471795
+id: 116
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 117 
+is_root: False
+parent_id: 104
+n_districts: 1.0
+area_hash: 605705870719351380
+id: 117
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 118 
+is_root: False
+parent_id: 103
+n_districts: 1.0
+area_hash: 3568084586323489086
+id: 118
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 119 
+is_root: False
+parent_id: 103
+n_districts: 1.0
+area_hash: 6577058478670028163
+id: 119
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 120 
+is_root: False
+parent_id: 103
+n_districts: 1.0
+area_hash: 2258916500975676444
+id: 120
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 121 
+is_root: False
+parent_id: 103
+n_districts: 1.0
+area_hash: 6367085311338150165
+id: 121
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 122 
+is_root: False
+parent_id: 97
+n_districts: 1.0
+area_hash: -669965311893379451
+id: 122
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 123 
+is_root: False
+parent_id: 97
+n_districts: 1.0
+area_hash: 5991710147947211289
+id: 123
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 124 
+is_root: False
+parent_id: 97
+n_districts: 1.0
+area_hash: 277743354001071023
+id: 124
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 125 
+is_root: False
+parent_id: 97
+n_districts: 1.0
+area_hash: 6108847252403343132
+id: 125
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 127 
+is_root: False
+parent_id: 126
+n_districts: 1.0
+area_hash: -5091704827257591957
+id: 127
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 128 
+is_root: False
+parent_id: 126
+n_districts: 1.0
+area_hash: 5498986905966587777
+id: 128
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 129 
+is_root: False
+parent_id: 126
+n_districts: 1.0
+area_hash: -6343798943308534936
+id: 129
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 130 
+is_root: False
+parent_id: 126
+n_districts: 1.0
+area_hash: 246957249671944485
+id: 130
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 134 
+is_root: False
+parent_id: 133
+n_districts: 1.0
+area_hash: 3214254342379078607
+id: 134
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 136 
+is_root: False
+parent_id: 133
+n_districts: 1.0
+area_hash: 258483764552695763
+id: 136
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 137 
+is_root: False
+parent_id: 133
+n_districts: 1.0
+area_hash: 654820381917823225
+id: 137
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 138 
+is_root: False
+parent_id: 133
+n_districts: 1.0
+area_hash: 7840893602490786447
+id: 138
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 139 
+is_root: False
+parent_id: 135
+n_districts: 1.0
+area_hash: -141670802927032396
+id: 139
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 140 
+is_root: False
+parent_id: 135
+n_districts: 1.0
+area_hash: 1680888510543165426
+id: 140
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 141 
+is_root: False
+parent_id: 135
+n_districts: 1.0
+area_hash: 7902082994978351111
+id: 141
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 142 
+is_root: False
+parent_id: 135
+n_districts: 1.0
+area_hash: 5833938647109148761
+id: 142
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 143 
+is_root: False
+parent_id: 132
+n_districts: 1.0
+area_hash: 554193727642888146
+id: 143
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 144 
+is_root: False
+parent_id: 132
+n_districts: 1.0
+area_hash: -1506213538758128995
+id: 144
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 145 
+is_root: False
+parent_id: 132
+n_districts: 1.0
+area_hash: -4268450235517900399
+id: 145
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 146 
+is_root: False
+parent_id: 132
+n_districts: 1.0
+area_hash: -5482030781914358733
+id: 146
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 147 
+is_root: False
+parent_id: 132
+n_districts: 1.0
+area_hash: -4078977445000872681
+id: 147
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 148 
+is_root: False
+parent_id: 132
+n_districts: 1.0
+area_hash: -243214425453511995
+id: 148
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 149 
+is_root: False
+parent_id: 131
+n_districts: 1.0
+area_hash: 2737617281727487066
+id: 149
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 151 
+is_root: False
+parent_id: 131
+n_districts: 1.0
+area_hash: 7132523378933018943
+id: 151
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 152 
+is_root: False
+parent_id: 131
+n_districts: 1.0
+area_hash: -8711526215872444196
+id: 152
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 153 
+is_root: False
+parent_id: 131
+n_districts: 1.0
+area_hash: 8228558427746054614
+id: 153
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 154 
+is_root: False
+parent_id: 150
+n_districts: 1.0
+area_hash: -2846172838548124550
+id: 154
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 155 
+is_root: False
+parent_id: 150
+n_districts: 1.0
+area_hash: -6293531700665377336
+id: 155
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 156 
+is_root: False
+parent_id: 150
+n_districts: 1.0
+area_hash: -2846172838548124550
+id: 156
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,"Node 157 
+is_root: False
+parent_id: 150
+n_districts: 1.0
+area_hash: -6293531700665377336
+id: 157
+children_ids: []
+partition_times: []
+n_infeasible_samples: 0
+infeasible_children: 0
+",,113
+28.84548020362854,0.0,,"Node 0 
+is_root: True
+parent_id: None
+n_districts: 9
+area_hash: -3701099834252361553
+id: 0
+children_ids: [[1, 2], [38, 39, 40, 41], [64, 65, 66], [97, 98], [131, 132, 133]]
+partition_times: [0.6233327388763428, 2.69879150390625, 0.9473657608032227, 0.5515246391296387, 5.555919885635376]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 2 
+is_root: False
+parent_id: 0
+n_districts: 5.0
+area_hash: -5847391587547958836
+id: 2
+children_ids: [[3, 4, 5, 6, 7], [8, 9, 10]]
+partition_times: [1.8899478912353516, 1.5239238739013672]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 10 
+is_root: False
+parent_id: 2
+n_districts: 3.0
+area_hash: 2249128451835993752
+id: 10
+children_ids: [[11, 12, 13], [14, 15, 16]]
+partition_times: [0.6133606433868408, 0.37909746170043945]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 1 
+is_root: False
+parent_id: 0
+n_districts: 4.0
+area_hash: 2133941484978878488
+id: 1
+children_ids: [[17, 18], [19, 20]]
+partition_times: [0.3091115951538086, 0.24339008331298828]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 20 
+is_root: False
+parent_id: 1
+n_districts: 3.0
+area_hash: 5951807345097162730
+id: 20
+children_ids: [[21, 22], [23, 24, 25]]
+partition_times: [0.13696980476379395, 0.36901116371154785]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 22 
+is_root: False
+parent_id: 20
+n_districts: 2.0
+area_hash: -8745849938956963784
+id: 22
+children_ids: [[26, 27], [28, 29]]
+partition_times: [0.14162111282348633, 0.1326456069946289]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 18 
+is_root: False
+parent_id: 1
+n_districts: 2.0
+area_hash: 2934870772905013275
+id: 18
+children_ids: [[30, 31], [32, 33]]
+partition_times: [0.09908890724182129, 0.12071728706359863]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 17 
+is_root: False
+parent_id: 1
+n_districts: 2.0
+area_hash: -6836952721183593926
+id: 17
+children_ids: [[34, 35], [36, 37]]
+partition_times: [0.09817147254943848, 0.1197195053100586]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 41 
+is_root: False
+parent_id: 0
+n_districts: 4.0
+area_hash: -3850086658379143955
+id: 41
+children_ids: [[42, 43], [44, 45, 46, 47]]
+partition_times: [0.25232958793640137, 0.756007194519043]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 43 
+is_root: False
+parent_id: 41
+n_districts: 2.0
+area_hash: -8966718231189558202
+id: 43
+children_ids: [[48, 49], [50, 51]]
+partition_times: [0.09180355072021484, 0.09070801734924316]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 42 
+is_root: False
+parent_id: 41
+n_districts: 2.0
+area_hash: 7505420910724253706
+id: 42
+children_ids: [[52, 53], [54, 55]]
+partition_times: [0.07081103324890137, 0.07679390907287598]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 40 
+is_root: False
+parent_id: 0
+n_districts: 2.0
+area_hash: 4985596217136124504
+id: 40
+children_ids: [[56, 57], [58, 59]]
+partition_times: [0.13463640213012695, 0.1865091323852539]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 39 
+is_root: False
+parent_id: 0
+n_districts: 2.0
+area_hash: 6553961699123640822
+id: 39
+children_ids: [[60, 61], [62, 63]]
+partition_times: [0.29915523529052734, 0.22040939331054688]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 66 
+is_root: False
+parent_id: 0
+n_districts: 3.0
+area_hash: -2838753978835082444
+id: 66
+children_ids: [[67, 68], [69, 70, 71]]
+partition_times: [0.4053633213043213, 0.44448041915893555]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 68 
+is_root: False
+parent_id: 66
+n_districts: 2.0
+area_hash: 1618253280824135970
+id: 68
+children_ids: [[72, 73], [74, 75]]
+partition_times: [0.16367721557617188, 0.19937443733215332]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 65 
+is_root: False
+parent_id: 0
+n_districts: 3.0
+area_hash: 9142572757703603006
+id: 65
+children_ids: [[76, 77, 78], [79, 80]]
+partition_times: [0.3649287223815918, 0.1296243667602539]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 80 
+is_root: False
+parent_id: 65
+n_districts: 2.0
+area_hash: 5973577101983069997
+id: 80
+children_ids: [[81, 82], [83, 84]]
+partition_times: [0.10671615600585938, 0.11070799827575684]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 64 
+is_root: False
+parent_id: 0
+n_districts: 3.0
+area_hash: -2335153218365383261
+id: 64
+children_ids: [[85, 86], [87, 88]]
+partition_times: [0.15352582931518555, 0.11107468605041504]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 88 
+is_root: False
+parent_id: 64
+n_districts: 2.0
+area_hash: 7688962721878771016
+id: 88
+children_ids: [[89, 90], [91, 92]]
+partition_times: [0.10568356513977051, 0.1475667953491211]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 86 
+is_root: False
+parent_id: 64
+n_districts: 2.0
+area_hash: 7631509546609861200
+id: 86
+children_ids: [[93, 94], [95, 96]]
+partition_times: [0.0937509536743164, 0.06696295738220215]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 98 
+is_root: False
+parent_id: 0
+n_districts: 6.0
+area_hash: 2246241695006955223
+id: 98
+children_ids: [[99, 100, 101, 102, 103], [104, 105]]
+partition_times: [1.3959627151489258, 0.36801671981811523]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 105 
+is_root: False
+parent_id: 98
+n_districts: 4.0
+area_hash: 3821851488437616159
+id: 105
+children_ids: [[106, 107, 108, 109], [110, 111, 112, 113]]
+partition_times: [0.6766114234924316, 0.5176513195037842]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 104 
+is_root: False
+parent_id: 98
+n_districts: 2.0
+area_hash: -7537881082719878287
+id: 104
+children_ids: [[114, 115], [116, 117]]
+partition_times: [0.1939239501953125, 0.24447917938232422]
+n_infeasible_samples: 2
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 103 
+is_root: False
+parent_id: 98
+n_districts: 2.0
+area_hash: -2494271102360280497
+id: 103
+children_ids: [[118, 119], [120, 121]]
+partition_times: [0.08969616889953613, 0.1076653003692627]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 97 
+is_root: False
+parent_id: 0
+n_districts: 3.0
+area_hash: -7442219628005915238
+id: 97
+children_ids: [[122, 123, 124], [125, 126]]
+partition_times: [1.00933837890625, 0.17854762077331543]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 126 
+is_root: False
+parent_id: 97
+n_districts: 2.0
+area_hash: 6521764634214634702
+id: 126
+children_ids: [[127, 128], [129, 130]]
+partition_times: [0.19148826599121094, 0.15658068656921387]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 133 
+is_root: False
+parent_id: 0
+n_districts: 3.0
+area_hash: 973200418490377957
+id: 133
+children_ids: [[134, 135], [136, 137, 138]]
+partition_times: [0.1585385799407959, 0.22040891647338867]
+n_infeasible_samples: 4
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 135 
+is_root: False
+parent_id: 133
+n_districts: 2.0
+area_hash: -5068464891569314670
+id: 135
+children_ids: [[139, 140], [141, 142]]
+partition_times: [0.13215970993041992, 0.13858866691589355]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 132 
+is_root: False
+parent_id: 0
+n_districts: 3.0
+area_hash: -1609975694579561586
+id: 132
+children_ids: [[143, 144, 145], [146, 147, 148]]
+partition_times: [0.3754265308380127, 0.35804271697998047]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 131 
+is_root: False
+parent_id: 0
+n_districts: 3.0
+area_hash: 402436596213128665
+id: 131
+children_ids: [[149, 150], [151, 152, 153]]
+partition_times: [0.1456279754638672, 0.26146841049194336]
+n_infeasible_samples: 0
+infeasible_children: 0
+",113
+28.84548020362854,0.0,,"Node 150 
+is_root: False
+parent_id: 131
+n_districts: 2.0
+area_hash: 1216193101593997959
+id: 150
+children_ids: [[154, 155], [156, 157]]
+partition_times: [0.07583951950073242, 0.07645916938781738]
+n_infeasible_samples: 2
+infeasible_children: 0
+",113

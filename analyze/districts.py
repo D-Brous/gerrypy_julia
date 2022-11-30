@@ -8,12 +8,11 @@ import math
 import itertools
 from scipy.sparse import coo_matrix
 from scipy.spatial.distance import pdist, cdist
-from data.data2020.load import *
+from data.buffalo_data.load import *
 from analyze.tree import *
 from analyze.subsample import *
 from analyze.tree import *
 from rules.political_boundaries.preservation_metrics import *
-
 
 def average_entropy(conditional_p):
     """

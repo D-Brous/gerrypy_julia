@@ -1,10 +1,13 @@
+import sys
+sys.path.append('../gerrypy')
+
 import os
 import time
 import pickle
 import numpy as np
-from gerrypy import constants
-from gerrypy.data.load import load_state_df, load_election_df
-from gerrypy.analyze.districts import make_bdm, create_district_df
+import constants
+from data.load import load_state_df, load_election_df
+from analyze.districts import make_bdm, create_district_df
 
 
 def district_df_of_tree_dir(dir_path, states=None):

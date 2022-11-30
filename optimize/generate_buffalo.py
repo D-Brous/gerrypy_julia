@@ -15,6 +15,7 @@ from optimize.partition import *
 from optimize.tree import SHPNode
 from rules.political_boundaries.preservation_constraint import *
 from rules.political_boundaries.preservation_cost_function import *
+from data.buffalo_data.processing import population_tolerance
 
 class DefaultCostFunction:
     def __init__(self, lengths):
@@ -101,12 +102,6 @@ class ColumnGenerator:
         self.n_successful_partitions = 0
 
         self.event_list = []
-
-        if self.config.get('boundary_type') == 'county':
-            tracts = load_tract_shapes(state_abbrev, custom_path=config.get('custom_shape_path', ''))
-            tracts = tracts.rename(columns={'COUNTYFP20': 'COUNTYFP'})
-            self.model_factory = BoundaryPreservationConstraints(
-                tracts, config.get('county_discount_factor', 0.5))
 
         self.cost_fn = DefaultCostFunction(lengths)
 
@@ -217,7 +212,6 @@ class ColumnGenerator:
         """
         area_df = self.state_df.loc[node.area]
         statedf = self.state_df
-        print(self.state_df)
         samples = []
         n_trials = 0
         n_samples = 1 if node.is_root else self.config['n_samples']
@@ -420,9 +414,10 @@ if __name__ == '__main__':
         'IP_timeout': 10,
     }
     pdp_config = {
-        'state': 'NC',
-        'n_districts': 13,
-        'population_tolerance': .01,
+        'state': 'Buffalo',
+        'n_districts': 9,
+        #'population_tolerance': .01, 
+        'population_tolerance': population_tolerance(),
     }
     base_config = {**center_selection_config,
                    **tree_config,

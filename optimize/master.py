@@ -1,13 +1,14 @@
 from gurobipy import *
 import numpy as np
 from scipy.stats import t
+import pandas as pd
 
 from gurobipy import quicksum
 from gurobipy import Model
 from gurobipy import GRB
 
 def make_master(k, block_district_matrix, costs,
-                relax=False, opt_type='abs_val'):
+                relax=False, opt_type='minimize'):
     """
     Constructs the master selection problem.
     Args:
@@ -108,6 +109,27 @@ def efficiency_gap_coefficients(district_df, state_vote_share):
     # https://www.brennancenter.org/sites/default/files/legal-work/How_the_Efficiency_Gap_Standard_Works.pdf
     # Efficiency Gap = (Seat Margin – 50%) – 2 (Vote Margin – 50%)
     return (expected_seats - .5) - 2 * (state_vote_share - .5)
+
+
+def nbd_coefficients(bdm, state_df):
+    """
+
+    Args:
+        bdm: (np.array) binary matrix a_ij = 1 if block i is in district j
+        state_df: (pd.DataFrame) original dataframe. Must include 'nbhdname' field
+
+    Returns: (np.array) of neighborhood counts per district
+
+    """
+    nbhds = state_df['nbhdname']
+    nbhd_count=[]
+    for d in bdm.T:
+        dist_nbhds = []
+        for index, i in enumerate(d):
+            if i==1: dist_nbhds.append(nbhds[index])
+        dist_nbhds_unique=list(set(dist_nbhds))
+        nbhd_count.append(len(dist_nbhds_unique))
+    return(np.array(nbhd_count))
 
 
 def make_root_partition_to_leaf_map(leaf_nodes, internal_nodes):

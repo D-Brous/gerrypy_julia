@@ -15,6 +15,18 @@ import scipy.sparse as sp
 import pandas as pd
 import geopandas as gpd
 
+def load_state_df(state_abbrev=None):
+    """
+    Args:
+        state_abbrev: (str) two letter state abbreviation
+
+    Returns: (pd.DataFrame) of selected tract level metrics
+    """
+    state_df_path = os.path.join(constants.OPT_DATA_PATH_BUFFALO,
+                                 'state_df.csv')
+    df = pd.read_csv(state_df_path)
+    return df.sort_values(by='GEOID').reset_index(drop=True)
+
 def load_tract_shapes(year=None, custom_path=''):
     """
     Args:
