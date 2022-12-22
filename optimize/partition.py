@@ -5,6 +5,97 @@ from gurobipy import quicksum
 from gurobipy import Model
 from gurobipy import GRB
 
+def make_partition_IP_Buffalo(costs, connectivty_sets, population, pop_bounds, neighborhoods):
+    """
+    Creates the Gurobi model to partition a region.
+    Args:
+        costs: (dict) {center: {tract: cost}} The keys of the outer dict
+            are the only centers that are considered in the partition.
+             I.e. len(lengths) = z.
+        edge_dists: (dict) {center: {tract: hop_distance}} Same as lengths but
+            value is the shortest path hop distance (# edges between i and j)
+        G: (nx.Graph) The block adjacency graph
+        population: (dict) {tract int id: population}
+        pop_bounds: (dict) {center int id: {'lb': district population lower
+            bound, 'ub': tract population upper bound}
+        alpha: (int) The exponential cost term
+        neighborhoods: (dict) {tract int id: neighborhood} Nbhd name for each tract
+
+    Returns: (tuple (Gurobi partition model, model variables as a dict)
+
+    """
+    partition_problem = Model('partition')
+    districts = {}
+    BinNbds={}
+    #make list and dict of neighborhoods in this region
+    nbdlist = []
+    for j in neighborhoods:
+        if neighborhoods[j] not in nbdlist:
+            nbdlist.append(neighborhoods[j])
+    nbddict = {v:k for v, k in enumerate(nbdlist)}
+    # Create the variables
+    for center, tracts in costs.items():
+        districts[center] = {}
+        for tract in tracts:
+            districts[center][tract] = partition_problem.addVar(
+                vtype=GRB.BINARY,
+                obj=costs[center][tract]
+            )
+    #Create binary variables to track if nbhd k is in center i
+    for i in districts:
+        BinNbds[i] = {}
+        for k in nbddict:
+            BinNbds[i][k] = partition_problem.addVar(
+                vtype=GRB.BINARY
+            )
+
+    # Each tract belongs to exactly one district
+    for j in population:
+        partition_problem.addConstr(quicksum(districts[i][j] for i in districts
+                                    if j in districts[i]) == 1,
+                           name='exactlyOne')
+    # Population tolerances
+    for i in districts:
+        partition_problem.addConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           >= pop_bounds[i]['lb'],
+                           name='x%s_minsize' % i)
+
+        partition_problem.addConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           <= pop_bounds[i]['ub'],
+                           name='x%s_maxsize' % i)
+    # Set up binary neighborhood variables
+    for k in nbddict:
+        for i in districts:
+            partition_problem.addConstr(quicksum(districts[i][j] for j in districts[i]
+                                        if neighborhoods[j]==nbddict[k])
+                                        <= BinNbds[i][k]*10000,
+                                        name='binarynbhd_%s' % k)
+    
+    # Each neighborhood in no more than 2 districts
+    for k in nbddict:
+        partition_problem.addConstr(quicksum(BinNbds[i][k] for i in districts) <= 2,
+                          name='nbhd_%s' % k)
+
+    # connectivity
+    for center, sp_sets in connectivty_sets.items():
+        for node, sp_set in sp_sets.items():
+            if center == node:
+                continue
+            partition_problem.addConstr(districts[center][node] <=
+                               quicksum(districts[center][nbor]
+                                        for nbor in sp_set))
+
+    partition_problem.setObjective(quicksum(districts[i][j] * costs[i][j]
+                                    for i in costs for j in costs[i]),
+                           GRB.MINIMIZE)
+    partition_problem.Params.LogToConsole = 0
+    partition_problem.Params.TimeLimit = len(population) / 200
+    partition_problem.update()
+
+    return partition_problem, districts, BinNbds
+
 def make_partition_IP(costs, connectivty_sets, population, pop_bounds):
     """
     Creates the Gurobi model to partition a region.
@@ -49,7 +140,8 @@ def make_partition_IP(costs, connectivty_sets, population, pop_bounds):
                                     for j in districts[i])
                            <= pop_bounds[i]['ub'],
                            name='x%s_maxsize' % i)
-
+                           
+    # connectivity
     for center, sp_sets in connectivty_sets.items():
         for node, sp_set in sp_sets.items():
             if center == node:
@@ -58,17 +150,14 @@ def make_partition_IP(costs, connectivty_sets, population, pop_bounds):
                                quicksum(districts[center][nbor]
                                         for nbor in sp_set))
 
-    #TODO Add constraint that each neighborhood is in no more than 2 districts
-
-    # partition_problem.setObjective(quicksum(districts[i][j] * costs[i][j]
-    #                                for i in costs for j in costs[i]),
-    #                       GRB.MINIMIZE)
+    partition_problem.setObjective(quicksum(districts[i][j] * costs[i][j]
+                                    for i in costs for j in costs[i]),
+                           GRB.MINIMIZE)
     partition_problem.Params.LogToConsole = 0
     partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
     return partition_problem, districts
-
 
 def edge_distance_connectivity_sets(edge_distance, G):
     connectivity_set = {}

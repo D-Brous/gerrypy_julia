@@ -24,7 +24,7 @@ class DefaultCostFunction:
     def get_costs(self, area_df, centers):
         population = area_df.TOTAL_ADJ.values
         index = list(area_df.index)
-        costs = self.lengths[np.ix_(centers, index)] * ((population / 1000) + 1)
+        costs = self.lengths[np.ix_(centers, index)]
 
         costs **= (1 + random.random())
         return {center: {index[bix]: cost for bix, cost in enumerate(costs[cix])}
@@ -108,7 +108,7 @@ class ColumnGenerator:
     def _assign_id(self):
         self.max_id += 1
         return self.max_id
-
+ 
     def retry_sample(self, problem_node, sample_internal_nodes, sample_leaf_nodes):
         def get_descendents(node_id):
             if self.config['verbose']:
@@ -262,16 +262,20 @@ class ColumnGenerator:
         costs = self.cost_fn.get_costs(area_df, list(children_centers.keys()))
         connectivity_sets = edge_distance_connectivity_sets(edge_dists, G)
 
-        partition_IP, xs = make_partition_IP(costs,
+        neighborhoods = area_df.nbhdname.to_dict()
+
+        partition_IP, xs, binnbds = make_partition_IP_Buffalo(costs,
                                              connectivity_sets,
                                              area_df.TOTAL_ADJ.to_dict(),
-                                             pop_bounds)
+                                             pop_bounds, neighborhoods)
 
         partition_IP.Params.MIPGap = self.config['IP_gap_tol']
         partition_IP.update()
         partition_IP.optimize()
         try:
             districting = {i: [j for j in xs[i] if xs[i][j].X > .5]
+                           for i in children_centers}
+            bins = {i: [k for k in binnbds[i] if binnbds[i][k].X > .5]
                            for i in children_centers}
             feasible = all([nx.is_connected(nx.subgraph(self.G, distr)) for
                             distr in districting.values()])

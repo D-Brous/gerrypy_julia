@@ -147,7 +147,7 @@ if __name__ == '__main__':
         'capacity_weights': 'voronoi',
     }
     tree_config = {
-        'max_sample_tries': 25,
+        'max_sample_tries': 25, 
         'n_samples': 2,
         'n_root_samples': 5,
         'max_n_splits': 5, 
