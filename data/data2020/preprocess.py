@@ -23,6 +23,7 @@ def preprocess_tracts(state_abbrev):
     """
 
     tract_shapes = load_tract_shapes(state_abbrev, constants.ACS_BASE_YEAR)
+    print(len(tract_shapes))
 
     print(type(tract_shapes))
     state_df = pd.DataFrame({
@@ -30,8 +31,10 @@ def preprocess_tracts(state_abbrev):
         'x': tract_shapes.centroid.x,
         'y': tract_shapes.centroid.y,
         'area': tract_shapes.area / 1000**2,  # sq km
-        'GEOID': tract_shapes.GEOID20.apply(lambda x: str(x).zfill(11)),
+        'GEOID': tract_shapes.GEOID.apply(lambda x: str(x).zfill(11)),
     })
+
+    print(len(state_df))
 
     # Join location data with demographic data TODO: get demographic data
     demo_data = pd.read_csv(os.path.join(constants.TRACT_DATA_PATH_2020,
@@ -87,4 +90,4 @@ def preprocess_all_states():
 
 if __name__ == "__main__":
     #preprocess_all_states()
-    preprocess_tracts('NC')
+    preprocess_tracts('NY')

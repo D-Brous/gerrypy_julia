@@ -42,7 +42,7 @@ def download_vtds(states=None, year=constants.ACS_BASE_YEAR):
 
     # Check if already have
     downloaded_files = os.listdir(vtds_dir)
-    cached = [state for state, year in downloaded_files if year == year]
+    cached = [state for state in downloaded_files]
     states = [state for state in states if state not in cached]
     if not states:
         return 
@@ -101,8 +101,9 @@ def download_state_shapes(states=None, year=constants.ACS_BASE_YEAR):
 
     # Check if already have
     downloaded_files = os.listdir(shapes_dir)
+    print(downloaded_files)
     downloaded_files = [f.split("_") for f in downloaded_files]
-    cached = [state for state, year in downloaded_files if year == year]
+    cached = [state for state in downloaded_files]
     states = [state for state in states if state not in cached]
     if not states:
         return
@@ -123,18 +124,18 @@ def download_state_shapes(states=None, year=constants.ACS_BASE_YEAR):
 
         if state_code not in states_fips:
             print("%s cached" % state_abbr)
+        else:
+            dir_name = os.path.join(shapes_dir, "_".join([state_abbr]))
+            try:
+                os.mkdir(dir_name)
+            except FileExistsError:
+                continue
 
-        dir_name = os.path.join(shapes_dir, "_".join([state_abbr, year]))
-        try:
-            os.mkdir(dir_name)
-        except FileExistsError:
-            continue
+            resp = urlopen(TIGER_URL + file_name)
+            zipfile = ZipFile(BytesIO(resp.read()))
 
-        resp = urlopen(TIGER_URL + file_name)
-        zipfile = ZipFile(BytesIO(resp.read()))
-
-        zipfile.extractall(dir_name)
-        print("Successfully downloaded and extracted state", state_abbr)
+            zipfile.extractall(dir_name)
+            print("Successfully downloaded and extracted state", state_abbr)
 
 
 def download_state_places_shapes(states=None, year=constants.ACS_BASE_YEAR):
@@ -245,4 +246,4 @@ def download_all_district_shapes():
 
 
 if __name__ == "__main__":
-    download_vtds(states=['NC'], year=2020)
+    download_state_shapes(states=['NY'], year=2020)

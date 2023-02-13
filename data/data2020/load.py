@@ -82,15 +82,17 @@ def load_tract_shapes(state_abbrev, year=None, custom_path=''):
     """
     if custom_path:
         tract_shapes = gpd.read_file(os.path.join(custom_path, state_abbrev))
-        return tract_shapes.sort_values(by='GEOID20').reset_index(drop=True)
+        return tract_shapes.sort_values(by='GEOID').reset_index(drop=True)
     if not year:
         year = constants.ACS_BASE_YEAR
     shape_fname = state_abbrev
     tract_shapes = gpd.read_file(os.path.join(constants.CENSUS_SHAPE_PATH_2020,
                                               shape_fname))
     tract_shapes = tract_shapes.to_crs("EPSG:3078")  # meters
-    tract_shapes = tract_shapes[tract_shapes.ALAND20 > 0] #TODO
-    return tract_shapes.sort_values(by='GEOID20').reset_index(drop=True)
+    print(len(tract_shapes))
+    tract_shapes = tract_shapes[tract_shapes.ALAND > 0]
+    print(len(tract_shapes))
+    return tract_shapes.sort_values(by='GEOID').reset_index(drop=True)
 
 
 def load_adjacency_graph(state_abbrev):
@@ -182,6 +184,6 @@ def load_custom_mapping(state, location):
     return new_to_old, old_to_new
 
 if __name__ == "__main__":
-    load_tract_shapes('NC')
+    load_tract_shapes('NY')
 
 
