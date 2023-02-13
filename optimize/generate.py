@@ -9,7 +9,7 @@ import networkx as nx
 from collections import OrderedDict
 import constants as consts
 from analyze.districts import *
-from data.buffalo_data.load import load_opt_data
+from data.data2020.load import load_opt_data
 from optimize.center_selection import *
 from optimize.partition import *
 from optimize.tree import SHPNode
@@ -72,13 +72,11 @@ class ColumnGenerator:
         """
         state_abbrev = config['state']
         optimization_data_location = config.get('optimization_data', '')
-        state_df, G, lengths, edge_dists = load_opt_data(
+        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev=state_abbrev,
                                                          special_input=optimization_data_location)
         lengths /= 1000
 
         self.state_abbrev = state_abbrev
-
-        print(state_df)
 
         ideal_pop = state_df.population.values.sum() / config['n_districts']
         max_pop_variation = ideal_pop * config['population_tolerance']
@@ -219,8 +217,6 @@ class ColumnGenerator:
 
         """
         area_df = self.state_df.loc[node.area]
-        statedf = self.state_df
-        print(self.state_df)
         samples = []
         n_trials = 0
         n_samples = 1 if node.is_root else self.config['n_samples']
@@ -275,8 +271,8 @@ class ColumnGenerator:
                                              connectivity_sets,
                                              area_df.population.to_dict(),
                                              pop_bounds)
-        if self.config['boundary_type'] == 'county':
-            self.model_factory.augment_model(partition_IP, xs, area_df.index.values, costs)
+        #if self.config['boundary_type'] == 'county':
+        #    self.model_factory.augment_model(partition_IP, xs, area_df.index.values, costs)
 
         partition_IP.Params.MIPGap = self.config['IP_gap_tol']
         partition_IP.update()
@@ -426,8 +422,8 @@ if __name__ == '__main__':
         'IP_timeout': 10,
     }
     pdp_config = {
-        'state': 'NC',
-        'n_districts': 13,
+        'state': 'NY',
+        'n_districts': 26,
         'population_tolerance': .01,
     }
     base_config = {**center_selection_config,

@@ -75,7 +75,7 @@ def make_partition_IP_Buffalo(costs, connectivty_sets, population, pop_bounds, n
     
     # Each neighborhood in no more than 2 districts
     for k in nbddict:
-        partition_problem.addConstr(quicksum(BinNbds[i][k] for i in districts) <= 2,
+        partition_problem.addConstr(quicksum(BinNbds[i][k] for i in districts) <= 1, #TODO
                           name='nbhd_%s' % k)
 
     # connectivity
@@ -171,7 +171,6 @@ def edge_distance_connectivity_sets(edge_distance, G):
                     constr_set.append(nbor)
             connectivity_set[center][node] = constr_set
     return connectivity_set
-
 
 def make_partition_IP_vectorized(cost_coeffs, spt_matrix, population, pop_bounds):
     """

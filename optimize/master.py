@@ -31,6 +31,14 @@ def make_master(k, block_district_matrix, costs,
     for j in D:
         x[j] = master.addVar(vtype=vtype, name="x(%s)" % j)
 
+    #Create binary variables to track if nbhd k is in center i
+    #for i in districts:
+    #    BinNbds[i] = {}
+    #    for k in nbddict:
+    #        BinNbds[i][k] = partition_problem.addVar(
+    #            vtype=GRB.BINARY
+    #        )
+
     master.addConstrs((quicksum(x[j] * block_district_matrix[i, j] for j in D) == 1
                        for i in range(n_blocks)), name='exactlyOne')
 
@@ -123,6 +131,26 @@ def nbd_coefficients(bdm, state_df):
     """
     nbhds = state_df['nbhdname']
     nbhd_count=[]
+    for d in bdm.T:
+        dist_nbhds = []
+        for index, i in enumerate(d):
+            if i==1: dist_nbhds.append(nbhds[index])
+        dist_nbhds_unique=list(set(dist_nbhds))
+        nbhd_count.append(len(dist_nbhds_unique))
+    return(np.array(nbhd_count))
+
+def compactness_coefficients(bdm, state_df, lengths):
+    """
+
+    Args:
+        bdm: (np.array) binary matrix a_ij = 1 if block i is in district j
+        state_df: (pd.DataFrame) original dataframe.
+        lengths: (nparray) pairwise distances between tract centers
+
+    Returns: (np.array) of costs for each district, based on its compactness score
+
+    """
+    costs=[]
     for d in bdm.T:
         dist_nbhds = []
         for index, i in enumerate(d):

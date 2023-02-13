@@ -147,10 +147,11 @@ if __name__ == '__main__':
         'capacity_weights': 'voronoi',
     }
     tree_config = {
+        'parent_resample_trials': 5,
         'max_sample_tries': 25, 
         'n_samples': 2,
         'n_root_samples': 5,
-        'max_n_splits': 5, 
+        'max_n_splits': 2, 
         'min_n_splits': 2,
         'max_split_population_difference': 1.5,
         'event_logging': False,
@@ -163,8 +164,8 @@ if __name__ == '__main__':
     pdp_config = {
         'state': 'Buffalo',
         'n_districts': 9,
-        #'population_tolerance': .01, 
-        'population_tolerance': population_tolerance(),
+        'population_tolerance': .99, 
+        #'population_tolerance': population_tolerance()*12,
     }
     base_config = {**center_selection_config,
                    **tree_config,

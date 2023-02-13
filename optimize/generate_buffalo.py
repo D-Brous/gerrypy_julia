@@ -367,8 +367,10 @@ class ColumnGenerator:
             levels_to_leaf = max(math.ceil(math.log2(n_child_districts)), 1)
             distr_pop = self.config['ideal_pop'] * n_child_districts
 
-            ub = distr_pop + pop_deviation / levels_to_leaf
-            lb = distr_pop - pop_deviation / levels_to_leaf
+            #ub = distr_pop + pop_deviation / levels_to_leaf
+            #lb = distr_pop - pop_deviation / levels_to_leaf
+            ub = 1000000
+            lb = 1 #TODO
 
             pop_bounds[center] = {
                 'ub': ub,
@@ -407,7 +409,7 @@ if __name__ == '__main__':
         'max_sample_tries': 25,
         'n_samples': 2,
         'n_root_samples': 5,
-        'max_n_splits': 5,
+        'max_n_splits': 2,
         'min_n_splits': 2,
         'max_split_population_difference': 1.5,
         'event_logging': False,
