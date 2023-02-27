@@ -23,9 +23,7 @@ def preprocess_tracts(state_abbrev):
     """
 
     tract_shapes = load_tract_shapes(state_abbrev, constants.ACS_BASE_YEAR)
-    print(len(tract_shapes))
-
-    print(type(tract_shapes))
+    
     state_df = pd.DataFrame({
 
         'x': tract_shapes.centroid.x,
@@ -33,8 +31,6 @@ def preprocess_tracts(state_abbrev):
         'area': tract_shapes.area / 1000**2,  # sq km
         'GEOID': tract_shapes.GEOID.apply(lambda x: str(x).zfill(11)),
     })
-
-    print(len(state_df))
 
     # Join location data with demographic data TODO: get demographic data
     demo_data = pd.read_csv(os.path.join(constants.TRACT_DATA_PATH_2020,
@@ -50,6 +46,7 @@ def preprocess_tracts(state_abbrev):
     state_df = state_df.set_index('GEOID')
     state_df = state_df.join(demo_data)
     state_df = state_df.reset_index()
+    state_df['CountyCode'] = state_df.GEOID.str[2:5]
 
     shape_list = tract_shapes.geometry.to_list()
     adj_graph = pysal.lib.weights.Rook.from_iterable(shape_list).to_networkx()
