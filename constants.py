@@ -16,6 +16,7 @@ COUNTY_DATA_PATH_2020 = os.path.join(GERRYPY_BASE_PATH, 'data', 'data2020', 'acs
 SHAPES_2020_PATH = os.path.join(GERRYPY_BASE_PATH, 'data', '2020_redistricting', 'vtd_shapes')
 COLUMNS_PATH = os.path.join(GERRYPY_BASE_PATH, 'results', 'columns')
 RESULTS_PATH = os.path.join(GERRYPY_BASE_PATH, 'results', 'ny')
+BUFFALO_RESULTS_PATH = os.path.join(GERRYPY_BASE_PATH, 'results', 'buffalo')
 APP_PATH = os.path.join(GERRYPY_BASE_PATH, 'analyze', 'app', 'gerryapp')
 
 TRACT_DATA_PATH_BUFFALO = os.path.join(GERRYPY_BASE_PATH, 'data', 'buffalo_data', 'demo_data')

@@ -13,6 +13,7 @@ from analyze.tree import *
 from analyze.subsample import *
 from analyze.tree import *
 from rules.political_boundaries.preservation_metrics import *
+from scipy import sparse
 
 def average_entropy(conditional_p):
     """
@@ -178,7 +179,6 @@ def roeck_more_exact(districts, state_df, tracts, lengths):
         lengths: (np.array) Pairwise block distance matrix.
 
     Returns: List of district Roeck compactness scores.
-
     """
     def unwind_coords(poly):
         try:
@@ -227,6 +227,60 @@ def vectorized_edge_cuts(bdm, G):
     all_edges = degree_vector @ bdm
     district_edges = ((adjacency_matrix @ bdm) * bdm).sum(axis=0)
     return np.asarray(all_edges - district_edges)[0]
+
+def get_county_splits(G, state_df):
+    """
+
+    Args:
+        G: (nx.Graph) The block adjacency graph
+        state_df: (pd.DataFrame) original dataframe.
+
+    Returns: (np.array) of adjacent edges that split a county
+
+    """
+
+    #adjacency_matrix = nx.linalg.graphmatrix.adjacency_matrix(G)
+    #print(adjacency_matrix)
+    #degree_vector = adjacency_matrix.sum(axis=1).flatten()
+    #all_edges = degree_vector @ bdm
+    #district_edges = ((adjacency_matrix @ bdm) * bdm).sum(axis=0)
+    #print((adjacency_matrix @ bdm))
+    #print(((adjacency_matrix @ bdm) * bdm))
+    #print(district_edges)
+    #print(all_edges)
+    #print(np.asarray(all_edges - district_edges)[0])
+    #state_df['CountyCode']
+
+    adjacency_matrix = nx.linalg.graphmatrix.adjacency_matrix(G).toarray()
+    #print(adjacency_matrix)
+    counties = state_df['CountyCode'].to_numpy()
+    county_map = np.tile(counties, (len(counties), 1))
+    #print(county_map)
+    county_map_dif = county_map - county_map.T
+    boolean_counties = np.where(county_map_dif==0, 0, 1)
+    #print(boolean_counties)
+
+    county_splits = np.multiply(boolean_counties, adjacency_matrix)
+    c_sparse=sparse.csr_matrix(county_splits)
+    #print(c_sparse)
+    #print(county_splits)
+
+    #print(type(adjacency_matrix))
+    #print(adjacency_matrix)
+    #bdm2 = bdm @ bdm.T
+    #print(bdm2)
+    #bdm_adj = np.multiply(bdm2, adjacency_matrix)
+    #print(bdm_adj)
+
+    #print(type(bdm_adj))
+    #print(type(boolean_counties))
+
+    #county_splits=np.multiply(bdm_adj, boolean_counties)
+    #print(county_splits)
+    #print(max(county_splits))
+    #print(sum(county_splits))
+
+    return county_splits
 
 
 def vectorized_polsby_popper(bdm, G, shape_gdf, land_threshold=-1):
