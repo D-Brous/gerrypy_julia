@@ -29,6 +29,7 @@ def preprocess_tracts():
         'x': tract_shapes.centroid.x,
         'y': tract_shapes.centroid.y,
         'area': tract_shapes.area / 1000**2,  # sq km
+        'perimeter': tract_shapes.length,
         'GEOID': tract_shapes.GEOID20.apply(lambda x: str(x).zfill(11)),
     })
 
@@ -50,6 +51,8 @@ def preprocess_tracts():
 
     if not nx.is_connected(adj_graph):
         adj_graph = connect_components(tract_shapes)
+    adj_mat = nx.linalg.graphmatrix.adjacency_matrix(adj_graph).toarray()
+    border_dists=get_border_dists(adj_mat,state_df,tract_shapes)
 
     edge_dists = dict(nx.all_pairs_shortest_path_length(adj_graph))
 
@@ -63,6 +66,32 @@ def preprocess_tracts():
     np.save(os.path.join(save_path, 'lengths.npy'), plengths)
     nx.write_gpickle(adj_graph, os.path.join(save_path, 'G.p'))
     pickle.dump(edge_dists, open(os.path.join(save_path, 'edge_dists.p'), 'wb'))
+    np.savetxt(save_path+'border_dists.csv', border_dists, delimiter=',')
+
+def get_border_dists(adj_mat, state_df,tract_shapes):
+    """
+    Generates a matrix with the length of the shared border between every pair of adjacent blocks
+    (0 if not adjacent)
+    Args:
+        state_df: (pd.DataFrame) contains info on each block, including perimeter
+        adj_mat: (np.array) nxn array, where n is # blocks, which has (i,j)=1 if blocks i and j are
+            adjecent, 0 if not
+    """
+    border_mat=np.empty([len(state_df.index),len(state_df.index)])
+    for index, row in state_df.iterrows():
+        for j in range(index+1,len(state_df.index)):
+            if adj_mat[index,j]==0:
+                border_mat[index,j]=0
+            else:
+                union = tract_shapes.loc[[index,j],'geometry'].unary_union
+                border=(state_df.loc[index,'perimeter']+state_df.loc[j,'perimeter']-union.length)/2
+                border_mat[index,j]=border
+                border_mat[j,index]=border
+    
+    #for i in range(len(border_mat)):
+    #    print(sum(border_mat[i])/state_df.loc[i,'perimeter'])
+                
+    return border_mat
 
 if __name__ == "__main__":
     preprocess_tracts()

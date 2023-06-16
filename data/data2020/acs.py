@@ -127,4 +127,4 @@ def download_census_tables(state=None, year=None, county=False):
 
 
 if __name__ == '__main__':
-    download_all_tract_data(states=['NY'])
+    download_all_tract_data(states=['AL'])

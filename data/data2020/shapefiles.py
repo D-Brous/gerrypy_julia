@@ -246,4 +246,4 @@ def download_all_district_shapes():
 
 
 if __name__ == "__main__":
-    download_state_shapes(states=['NY'], year=2020)
+    download_state_shapes(states=['AL'], year=2020)

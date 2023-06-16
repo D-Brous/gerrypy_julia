@@ -184,6 +184,6 @@ def load_custom_mapping(state, location):
     return new_to_old, old_to_new
 
 if __name__ == "__main__":
-    load_tract_shapes('NY')
+    load_tract_shapes('AL')
 
 
