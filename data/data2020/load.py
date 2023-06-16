@@ -28,6 +28,10 @@ def load_state_df(state_abbrev):
                                  state_abbrev,
                                  'state_df.csv')
     df = pd.read_csv(state_df_path)
+
+    df['GEOID'] = df['GEOID'].astype(str)
+    df['GEOID'] = '0'+df['GEOID']
+
     return df.sort_values(by='GEOID').reset_index(drop=True)
 
 
@@ -135,6 +139,10 @@ def load_opt_data(state_abbrev, special_input='', use_spt_matrix=False):
     state_df_path = os.path.join(data_base_path, 'state_df.csv')
 
     state_df = pd.read_csv(state_df_path)
+
+    state_df['GEOID'] = state_df['GEOID'].astype(str)
+    state_df['GEOID'] = '0'+state_df['GEOID']
+
     G = nx.read_gpickle(adjacency_graph_path)
 
     if os.path.exists(os.path.join(data_base_path, 'lengths.npy')):
@@ -184,6 +192,6 @@ def load_custom_mapping(state, location):
     return new_to_old, old_to_new
 
 if __name__ == "__main__":
-    load_tract_shapes('AL')
+    load_state_df('AL')
 
 

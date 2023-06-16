@@ -69,14 +69,17 @@ class Experiment:
         bdm_df.to_csv(os.path.join(save_dir, csv_save_name), index=False)
         #district_df_of_tree_dir(save_dir)
 
-        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev='NY')
+        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev='AL')
+        print(state_df['GEOID'][0])
+        print(type(state_df['GEOID'][0]))
 
         maj_min=majority_minority(bdm, state_df)
 
         #county_split_coefficients(bdm,state_df,G)
 
-
-        state_df=load_state_df('NY')
+        state_df=load_state_df('AL')
+        print(state_df['GEOID'][0])
+        print(type(state_df['GEOID'][0]))
         solutions = master_solutions(cg.leaf_nodes, cg.internal_nodes, state_df, lengths,G, maj_min)
         print(solutions)
         solutions_df = export_solutions(solutions, state_df, bdm)
@@ -140,6 +143,7 @@ def export_solutions(solutions, state_df, bdm):
     """
     solutions_df = pd.DataFrame()
     solutions_df['GEOID'] = state_df['GEOID']
+    print(state_df['GEOID'][0])
     selected_dists = np.zeros(state_df.shape[0])
 
     for sol_idx in range(len(solutions['master_solutions'])):
@@ -164,7 +168,7 @@ if __name__ == '__main__':
         'parent_resample_trials': 5,
         'max_sample_tries': 25,
         'n_samples': 2,
-        'n_root_samples': 5,
+        'n_root_samples': 1, #TODO 5
         'max_n_splits': 5, 
         'min_n_splits': 2,
         'max_split_population_difference': 1.5,
