@@ -211,7 +211,6 @@ class ColumnGenerator:
 
         """
         area_df = self.state_df.loc[node.area]
-        statedf = self.state_df
         samples = []
         n_trials = 0
         n_samples = 1 if node.is_root else self.config['n_samples']
@@ -367,16 +366,23 @@ class ColumnGenerator:
             levels_to_leaf = max(math.ceil(math.log2(n_child_districts)), 1)
             distr_pop = self.config['ideal_pop'] * n_child_districts
 
-            #ub = distr_pop + pop_deviation / levels_to_leaf
-            #lb = distr_pop - pop_deviation / levels_to_leaf
-            ub = 1000000
-            lb = 1 #TODO
+            ub = distr_pop + pop_deviation / levels_to_leaf
+            lb = distr_pop - pop_deviation / levels_to_leaf
+            #ub = 1000000
+            #lb = 1 #TODO
 
             pop_bounds[center] = {
                 'ub': ub,
                 'lb': lb,
                 'n_districts': n_child_districts
             }
+            
+            #TODO
+            #pop_bounds[center] = {
+            #    'ub': 0,
+            #    'lb': 300000,
+            #    'n_districts': n_child_districts
+            #}
 
         return pop_bounds
 
@@ -408,7 +414,7 @@ if __name__ == '__main__':
     tree_config = {
         'max_sample_tries': 25,
         'n_samples': 2,
-        'n_root_samples': 5,
+        'n_root_samples': 2, #TODO this should be 5
         'max_n_splits': 2,
         'min_n_splits': 2,
         'max_split_population_difference': 1.5,
@@ -421,7 +427,7 @@ if __name__ == '__main__':
     }
     pdp_config = {
         'state': 'Buffalo',
-        'n_districts': 9,
+        'n_districts': 2, #TODO this should be 9
         #'population_tolerance': .01, 
         'population_tolerance': population_tolerance(),
     }

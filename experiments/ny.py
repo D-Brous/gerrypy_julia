@@ -12,6 +12,7 @@ import numpy as np
 import json
 from optimize.master import *
 from data.data2020.load import *
+from optimize.improvement import *
 
 class Experiment:
     """
@@ -67,14 +68,23 @@ class Experiment:
         bdm_df = pd.DataFrame(bdm)
         bdm_df.to_csv(os.path.join(save_dir, csv_save_name), index=False)
         #district_df_of_tree_dir(save_dir)
+
+        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev='NY')
+
+        maj_min=majority_minority(bdm, state_df)
+
+        #county_split_coefficients(bdm,state_df,G)
+
+
         state_df=load_state_df('NY')
-        solutions = master_solutions(cg.leaf_nodes, cg.internal_nodes, state_df)
+        solutions = master_solutions(cg.leaf_nodes, cg.internal_nodes, state_df, lengths,G, maj_min)
         print(solutions)
         solutions_df = export_solutions(solutions, state_df, bdm)
+
         results_save_name = '_'.join(['ny1', str(int(time.time()))]) + 'assignments.csv'
         solutions_df.to_csv(os.path.join(save_dir, results_save_name), index=False)
 
-def master_solutions(leaf_nodes, internal_nodes, state_df):
+def master_solutions(leaf_nodes, internal_nodes, state_df, lengths, G, maj_min):
     """
     Solves the master selection problem optimizing for fairness on all root partitions.
     Args:
@@ -83,17 +93,22 @@ def master_solutions(leaf_nodes, internal_nodes, state_df):
         district_df: (pd.DataFrame) selected statistics of generated districts.
         state: (str) two letter state abbreviation
         state_vote_share: (float) the expected Republican vote-share of the state.
+        lengths: (np.array) Pairwise block distance matrix.
+        G: (nx.Graph) The block adjacency graph
 
     Returns: (dict) solution data for each optimal solution.
 
     """
     bdm = make_bdm(leaf_nodes)
-    cost_coeffs = nbd_coefficients(bdm, state_df) #TODO
+    #cost_coeffs = compactness_coefficients(bdm, state_df, lengths) 
+    cost_coeffs = county_split_coefficients(bdm, state_df,G) 
+    print(cost_coeffs)
+    cost_coeffs=np.array(cost_coeffs)
     root_map = make_root_partition_to_leaf_map(leaf_nodes, internal_nodes)
     sol_dict = {}
     for partition_ix, leaf_slice in root_map.items():
         start_t = time.time()
-        model, dvars = make_master(9, bdm[:, leaf_slice], cost_coeffs[leaf_slice])
+        model, dvars = make_master(base_config['n_districts'], bdm[:, leaf_slice], cost_coeffs[leaf_slice]) #TODO maj min
         construction_t = time.time()
 
         model.Params.LogToConsole = 0
@@ -124,7 +139,7 @@ def export_solutions(solutions, state_df, bdm):
 
     """
     solutions_df = pd.DataFrame()
-    solutions_df['GEOID20'] = state_df['GEOID20']
+    solutions_df['GEOID'] = state_df['GEOID']
     selected_dists = np.zeros(state_df.shape[0])
 
     for sol_idx in range(len(solutions['master_solutions'])):
@@ -147,9 +162,9 @@ if __name__ == '__main__':
     }
     tree_config = {
         'parent_resample_trials': 5,
-        'max_sample_tries': 25, 
+        'max_sample_tries': 25,
         'n_samples': 2,
-        'n_root_samples': 5,
+        'n_root_samples': 1, #TODO 5
         'max_n_splits': 5, 
         'min_n_splits': 2,
         'max_split_population_difference': 1.5,

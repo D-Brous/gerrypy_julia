@@ -248,7 +248,7 @@ class ColumnGenerator:
         Returns: (list) of shape nodes for each sub-region in the partition.
 
         """
-        children_sizes = node.sample_n_splits_and_child_sizes(self.config)
+        children_sizes = node.sample_n_splits_and_child_sizes(self.config) #TODO
 
         # dict : {center_ix : child size}
         children_centers = OrderedDict(self.select_centers(area_df, children_sizes))
