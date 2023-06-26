@@ -32,6 +32,7 @@ def make_master(k, block_district_matrix, costs,
     """
 
     n_blocks, n_columns = block_district_matrix.shape
+    print(block_district_matrix.shape)
 
     master = Model("master LP")
 
@@ -56,7 +57,8 @@ def make_master(k, block_district_matrix, costs,
                      name="totalDistricts")
     
     #if maj_min.size!=0:
-    #    master.addConstr(quicksum(x[j] * maj_min[j] for j in D)>=2, name="majorityMinority")
+    #master.addConstr(quicksum(x[j] * maj_min[j] for j in D)>=2, name="majorityMinority")
+    #TODO uncomment
 
     if opt_type == 'minimize':
         master.setObjective(quicksum(costs[j] * x[j] for j in D), GRB.MINIMIZE)
@@ -248,7 +250,7 @@ def majority_minority(bdm, state_df):
         dist_white=np.sum(np.multiply(d, white_per_block))
         dist_pop=np.sum(np.multiply(d, state_df['population']))
         dist_p_white=np.divide(dist_white, dist_pop)
-        print(dist_p_white)
+        #print(dist_p_white)
         if dist_p_white<0.5:
             maj_min.append(1)
         else:

@@ -172,6 +172,7 @@ class ColumnGenerator:
                        0, is_root=True)
         self.root = root
         self.internal_nodes[root.id] = root
+        #this root is the entire state_df
 
         while completed_root_samples < n_root_samples:
             # For each root partition, we attempt to populate the sample tree
@@ -267,10 +268,19 @@ class ColumnGenerator:
         costs = self.cost_fn.get_costs(area_df, list(children_centers.keys()))
         connectivity_sets = edge_distance_connectivity_sets(edge_dists, G)
 
-        partition_IP, xs = make_partition_IP(costs,
+        counties = area_df.CountyCode.to_dict()
+        split_lim=4 #TODO trial and error
+
+        partition_IP, xs, BinCounts = make_partition_IP_County(costs,
                                              connectivity_sets,
                                              area_df.population.to_dict(),
-                                             pop_bounds)
+                                             pop_bounds, counties, split_lim)
+        
+        #partition_IP, xs, = make_partition_IP(costs,
+        #                                     connectivity_sets,
+        #                                     area_df.population.to_dict(),
+        #                                     pop_bounds)
+
         #if self.config['boundary_type'] == 'county':
         #    self.model_factory.augment_model(partition_IP, xs, area_df.index.values, costs)
 
@@ -280,12 +290,17 @@ class ColumnGenerator:
         try:
             districting = {i: [j for j in xs[i] if xs[i][j].X > .5]
                            for i in children_centers}
+            bins = {i: [k for k in BinCounts[i] if BinCounts[i][k].X > .5]
+                           for i in children_centers}
+            #print(bins)
             feasible = all([nx.is_connected(nx.subgraph(self.G, distr)) for
                             distr in districting.values()])
             if not feasible:
                 print('WARNING: PARTITION NOT CONNECTED')
         except AttributeError:
             feasible = False
+
+        #print(bins)
 
         if self.config['event_logging']:
             if feasible:

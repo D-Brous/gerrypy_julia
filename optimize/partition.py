@@ -5,7 +5,110 @@ from gurobipy import quicksum
 from gurobipy import Model
 from gurobipy import GRB
 
-def make_partition_IP_Buffalo(costs, connectivty_sets, population, pop_bounds, neighborhoods):
+def make_partition_IP_County(costs, connectivity_sets, population, pop_bounds, counties, split_lim):
+    """
+    Creates the Gurobi model to partition a region.
+    Includes constraints that each county is in no more than 2 districts,
+        and that the total # of split counties is less than a set limit
+    Args:
+        costs: (dict) {center: {tract: cost}} The keys of the outer dict
+            are the only centers that are considered in the partition.
+             I.e. len(lengths) = z.
+        edge_dists: (dict) {center: {tract: hop_distance}} Same as lengths but
+            value is the shortest path hop distance (# edges between i and j)
+        G: (nx.Graph) The block adjacency graph
+        population: (dict) {tract int id: population}
+        pop_bounds: (dict) {center int id: {'lb': district population lower
+            bound, 'ub': tract population upper bound}
+        alpha: (int) The exponential cost term
+        counties: (dict) {tract int id: county} County FIPS for each tract
+        split_lim: (int) Maximum number of counties that are allowed to be split in each district
+
+    Returns: (tuple (Gurobi partition model, model variables as a dict)
+
+    """
+
+    partition_problem = Model('partition')
+    districts = {}
+    BinCounts={}
+    #make list and dict of counties in this region
+    countlist = []
+    for j in counties:
+        if counties[j] not in countlist:
+            countlist.append(counties[j]) #TODO make this faster
+    countdict = {v:k for v, k in enumerate(countlist)}
+    # Create the variables
+    for center, tracts in costs.items():
+        districts[center] = {}
+        for tract in tracts:
+            districts[center][tract] = partition_problem.addVar(
+                vtype=GRB.BINARY,
+                obj=costs[center][tract]
+            )
+    #Create binary variables to track if county k is in center i
+    for i in districts:
+        BinCounts[i] = {}
+        for k in countdict:
+            BinCounts[i][k] = partition_problem.addVar(
+                vtype=GRB.BINARY
+            )
+
+    # Each tract belongs to exactly one district
+    for j in population:
+        partition_problem.addConstr(quicksum(districts[i][j] for i in districts
+                                    if j in districts[i]) == 1,
+                           name='exactlyOne')
+    # Population tolerances
+    for i in districts:
+        partition_problem.addConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           >= pop_bounds[i]['lb'],
+                           name='x%s_minsize' % i)
+
+        partition_problem.addConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           <= pop_bounds[i]['ub'],
+                           name='x%s_maxsize' % i)
+    # Set up binary county variables
+    for k in countdict:
+        for i in districts:
+            partition_problem.addConstr(quicksum(districts[i][j] for j in districts[i]
+                                        if counties[j]==countdict[k])
+                                        <= BinCounts[i][k]*10000,
+                                        name='binarycounts_%s' % k)
+    
+    # Each county in no more than 2 districts
+    for k in countdict:
+        partition_problem.addConstr(quicksum(BinCounts[i][k] for i in districts) <= 2, #TODO
+                          name='count_%s' % k)
+        
+    # No more than split_lim total split counties
+    partition_problem.addConstr(quicksum(BinCounts[i][k] for i in districts for k in countdict)
+                            <= len(countdict)+ split_lim,
+                            name='split_lim')
+    
+    #TODO: This only tracks if a county is in two districts, BOTH OF WHICH are in the partition
+        #instead, see if 100% of county population is in district? Lower the cutoff?
+
+    # connectivity
+    for center, sp_sets in connectivity_sets.items():
+        for node, sp_set in sp_sets.items():
+            if center == node:
+                continue
+            partition_problem.addConstr(districts[center][node] <=
+                               quicksum(districts[center][nbor]
+                                        for nbor in sp_set))
+
+    partition_problem.setObjective(quicksum(districts[i][j] * costs[i][j]
+                                    for i in costs for j in costs[i]),
+                           GRB.MINIMIZE)
+    partition_problem.Params.LogToConsole = 0
+    partition_problem.Params.TimeLimit = len(population) / 200
+    partition_problem.update()
+
+    return partition_problem, districts, BinCounts
+
+def make_partition_IP_Buffalo(costs, connectivity_sets, population, pop_bounds, neighborhoods):
     """
     Creates the Gurobi model to partition a region.
     Args:
@@ -79,7 +182,7 @@ def make_partition_IP_Buffalo(costs, connectivty_sets, population, pop_bounds, n
                           name='nbhd_%s' % k)
 
     # connectivity
-    for center, sp_sets in connectivty_sets.items():
+    for center, sp_sets in connectivity_sets.items():
         for node, sp_set in sp_sets.items():
             if center == node:
                 continue
@@ -96,7 +199,7 @@ def make_partition_IP_Buffalo(costs, connectivty_sets, population, pop_bounds, n
 
     return partition_problem, districts, BinNbds
 
-def make_partition_IP(costs, connectivty_sets, population, pop_bounds):
+def make_partition_IP(costs, connectivity_sets, population, pop_bounds):
     """
     Creates the Gurobi model to partition a region.
     Args:
@@ -142,7 +245,7 @@ def make_partition_IP(costs, connectivty_sets, population, pop_bounds):
                            name='x%s_maxsize' % i)
                            
     # connectivity
-    for center, sp_sets in connectivty_sets.items():
+    for center, sp_sets in connectivity_sets.items():
         for node, sp_set in sp_sets.items():
             if center == node:
                 continue

@@ -53,6 +53,8 @@ class Experiment:
             'n_plans': number_of_districtings(cg.leaf_nodes, cg.internal_nodes)
         }
 
+        print(number_of_districtings(cg.leaf_nodes, cg.internal_nodes))
+
         def process(val):
             if isinstance(val, dict):
                 return ''.join([c for c in str(val) if c.isalnum()])
@@ -74,12 +76,11 @@ class Experiment:
         print(type(state_df['GEOID'][0]))
 
         maj_min=majority_minority(bdm, state_df)
+        print(maj_min)
 
         #county_split_coefficients(bdm,state_df,G)
 
         state_df=load_state_df('AL')
-        print(state_df['GEOID'][0])
-        print(type(state_df['GEOID'][0]))
         solutions = master_solutions(cg.leaf_nodes, cg.internal_nodes, state_df, lengths,G, maj_min)
         print(solutions)
         solutions_df = export_solutions(solutions, state_df, bdm)
@@ -103,15 +104,14 @@ def master_solutions(leaf_nodes, internal_nodes, state_df, lengths, G, maj_min):
 
     """
     bdm = make_bdm(leaf_nodes)
-    #cost_coeffs = compactness_coefficients(bdm, state_df, lengths) 
-    cost_coeffs = county_split_coefficients(bdm, state_df,G) 
-    print(cost_coeffs)
+    #cost_coeffs = compactness_coefficients(bdm, state_df, lengths)
+    cost_coeffs = county_split_coefficients(bdm, state_df,G)
     cost_coeffs=np.array(cost_coeffs)
     root_map = make_root_partition_to_leaf_map(leaf_nodes, internal_nodes)
     sol_dict = {}
     for partition_ix, leaf_slice in root_map.items():
         start_t = time.time()
-        model, dvars = make_master(base_config['n_districts'], bdm[:, leaf_slice], cost_coeffs[leaf_slice]) #TODO maj min
+        model, dvars = make_master(base_config['n_districts'], bdm[:, leaf_slice], cost_coeffs[leaf_slice], False, maj_min)
         construction_t = time.time()
 
         model.Params.LogToConsole = 0
@@ -128,6 +128,8 @@ def master_solutions(leaf_nodes, internal_nodes, state_df, lengths, G, maj_min):
             'solution_ixs': root_map[partition_ix][opt_cols],
             'optimal_objective': cost_coeffs[leaf_slice][opt_cols]
         }
+
+        print(maj_min[sol_dict[partition_ix]['solution_ixs']])
     return {'master_solutions': sol_dict}
 
 def export_solutions(solutions, state_df, bdm):
@@ -167,8 +169,8 @@ if __name__ == '__main__':
     tree_config = {
         'parent_resample_trials': 5,
         'max_sample_tries': 25,
-        'n_samples': 2,
-        'n_root_samples': 1, #TODO 5
+        'n_samples': 20, #TODO 2
+        'n_root_samples': 3, #TODO 5
         'max_n_splits': 5, 
         'min_n_splits': 2,
         'max_split_population_difference': 1.5,

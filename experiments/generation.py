@@ -1,7 +1,7 @@
-from gerrypy.optimize.generate import ColumnGenerator
-from gerrypy.analyze.districts import *
-from gerrypy.utils.dir_processing import district_df_of_tree_dir
-from gerrypy import constants
+from optimize.generate import ColumnGenerator
+from analyze.districts import *
+from utils.dir_processing import district_df_of_tree_dir
+import constants
 from copy import deepcopy
 import time
 import os
