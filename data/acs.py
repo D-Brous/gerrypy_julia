@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import pandas as pd
-from gerrypy import constants
+import constants
 
 
 def variable_mapping(year, columns=None):

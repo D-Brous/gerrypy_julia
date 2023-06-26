@@ -140,6 +140,9 @@ def load_opt_data(state_abbrev, special_input='', use_spt_matrix=False):
 
     state_df = pd.read_csv(state_df_path)
 
+    print('state df path ' + state_df_path)
+    print(state_df.shape)
+
     state_df['GEOID'] = state_df['GEOID'].astype(str)
     state_df['GEOID'] = '0'+state_df['GEOID']
 
@@ -192,6 +195,6 @@ def load_custom_mapping(state, location):
     return new_to_old, old_to_new
 
 if __name__ == "__main__":
-    load_state_df('AL')
+    load_opt_data('AL')
 
 
