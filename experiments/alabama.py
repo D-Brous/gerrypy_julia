@@ -2,7 +2,7 @@ import sys
 sys.path.append('../gerrypy')
 
 from optimize.generate import ColumnGenerator
-from analyze.districts import * #TODO
+from analyze.districts import *
 from optimize.dir_processing import district_df_of_tree_dir
 import constants
 from copy import deepcopy
