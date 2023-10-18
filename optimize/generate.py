@@ -225,7 +225,8 @@ class ColumnGenerator:
             n_samples = int((n_samples // 1) + (random.random() < n_samples % 1))
         while len(samples) < n_samples and n_trials < self.config['max_sample_tries']:
             partition_start_t = time.time()
-            child_nodes = self.make_partition(area_df, node)
+            child_nodes = self.make_partition(area_df, node) 
+            #print(child_nodes)
             partition_end_t = time.time()
             if child_nodes:
                 self.n_successful_partitions += 1
@@ -253,6 +254,7 @@ class ColumnGenerator:
 
         # dict : {center_ix : child size}
         children_centers = OrderedDict(self.select_centers(area_df, children_sizes))
+        #print(children_centers)
 
         connectivity = self.config.get('connectivity_constraint', None)
         if not node.is_root:
@@ -269,12 +271,15 @@ class ColumnGenerator:
         connectivity_sets = edge_distance_connectivity_sets(edge_dists, G)
 
         counties = area_df.CountyCode.to_dict()
-        split_lim=4 #TODO trial and error
+        split_lim=3 #TODO trial and error
 
-        partition_IP, xs, BinCounts = make_partition_IP_County(costs,
+        nonwhite_per_block=np.multiply((100-area_df['p_white']), area_df['population'])/100
+
+        #TODO do this for every possible maj-min split
+        partition_IP, xs, BinCounts,m = make_partition_IP_County_MajMin(costs,
                                              connectivity_sets,
                                              area_df.population.to_dict(),
-                                             pop_bounds, counties, split_lim)
+                                             pop_bounds, counties, split_lim, nonwhite_per_block)
         
         #partition_IP, xs, = make_partition_IP(costs,
         #                                     connectivity_sets,
@@ -318,12 +323,18 @@ class ColumnGenerator:
 
         if self.config['verbose']:
             if feasible:
+                #constraintm=partition_IP.getConstrByName('test1')
+                #slack=constraintm.slack
+                #if(slack!=0):
+                #    print(constraintm.slack)
+                objective_value = partition_IP.objVal
+                #print(objective_value)
                 print('successful sample')
             else:
                 print('infeasible')
 
         if feasible:
-            return [SHPNode(pop_bounds[center]['n_districts'], area, self._assign_id(), node.id)
+            return [SHPNode(pop_bounds[center]['n_districts'], area, self._assign_id(), node.id, False, center)
                     for center, area in districting.items()]
         else:
             node.n_infeasible_samples += 1

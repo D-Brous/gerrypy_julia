@@ -89,7 +89,11 @@ def download_census_tables(state=None, year=None, county=False):
         if constants.CENSUS_API_KEY:
             table_url += "&key=" + constants.CENSUS_API_KEY
 
+        print(table_url)
+        print('start r')
         r = requests.get(table_url)
+        print('end r')
+
         try:
             json_df = r.json()
         except:
@@ -127,4 +131,4 @@ def download_census_tables(state=None, year=None, county=False):
 
 
 if __name__ == '__main__':
-    download_all_tract_data(states=['AL'])
+    download_all_tract_data(states=['WY'])

@@ -108,6 +108,7 @@ def download_state_shapes(states=None, year=constants.ACS_BASE_YEAR):
     if not states:
         return
 
+    print('Start FTP')
     # Login to census FTP server
     ftp = FTP("ftp.census.gov")
     ftp.login()
@@ -246,4 +247,4 @@ def download_all_district_shapes():
 
 
 if __name__ == "__main__":
-    download_state_shapes(states=['AL'], year=2020)
+    download_state_shapes(states=['WY'], year=2020)

@@ -4,7 +4,8 @@ import numpy as np
 
 
 class SHPNode:
-    def __init__(self, n_districts, area, id, parent_id=None, is_root=False):
+    def __init__(self, n_districts, area, id,
+                 parent_id=None, is_root=False, center=None, num_mm=0): #TODO changed to include center, num_mm
         """
         SHPNodes store information needed to reconstruct the tree and gathers
         metadata from the generation process.
@@ -29,6 +30,9 @@ class SHPNode:
 
         self.n_infeasible_samples = 0
         self.infeasible_children = 0
+
+        self.center = center
+        self.num_mm = num_mm
 
     def get_branch(self, child_id):
         for branch_ix, branch in enumerate(self.children_ids):

@@ -5,7 +5,7 @@ import numpy as np
 import networkx as nx
 import os
 import pygeos
-import pysal
+import libpysal
 import pickle
 import pandas as pd
 import constants
@@ -47,7 +47,7 @@ def preprocess_tracts():
     state_df = state_df.reset_index()
 
     shape_list = tract_shapes.geometry.to_list()
-    adj_graph = pysal.lib.weights.Rook.from_iterable(shape_list).to_networkx()
+    adj_graph = libpysal.weights.Rook.from_iterable(shape_list).to_networkx()
 
     if not nx.is_connected(adj_graph):
         adj_graph = connect_components(tract_shapes)

@@ -17,7 +17,7 @@ from analyze.districts import get_county_splits
 from scipy import sparse
 
 def make_master(k, block_district_matrix, costs,
-                relax=False, maj_min=[], opt_type='minimize'):
+                 maj_min, bb, relax=False, opt_type='minimize'):
     """
     Constructs the master selection problem.
     Args:
@@ -56,12 +56,18 @@ def make_master(k, block_district_matrix, costs,
     master.addConstr(quicksum(x[j] for j in D) == k,
                      name="totalDistricts")
     
-    #if maj_min.size!=0:
-    #master.addConstr(quicksum(x[j] * maj_min[j] for j in D)>=2, name="majorityMinority")
-    #TODO uncomment
+    #at least 2 majority minority districts
+    master.addConstr(quicksum(maj_min[j] * x[j] for j in D)>=2, name="majorityMinority") #TODO 2
+
+    #Black Belt in no more than 7 districts (present to see slack) (Not needed)
+    master.addConstr(quicksum(bb[j] * x[j] for j in D)>=0, name="blackBelt")
+
+    for k in D:
+        master.addConstr(maj_min[k] * x[k] >=0, #TODO
+                          name='testm_%s' % k)
 
     if opt_type == 'minimize':
-        master.setObjective(quicksum(costs[j] * x[j] for j in D), GRB.MINIMIZE)
+        master.setObjective(quicksum(costs[j] * x[j] + 10000*bb[j] * x[j] for j in D), GRB.MINIMIZE)
     elif opt_type == 'maximize':
         master.setObjective(quicksum(costs[j] * x[j] for j in D), GRB.MAXIMIZE)
     elif opt_type == 'abs_val':
@@ -242,7 +248,9 @@ def majority_minority(bdm, state_df):
         and 0 means it's not
 
     """
+    print("Begin maj min")
     maj_min=[]
+    p_whites=[]
     white_per_block=np.multiply(state_df['p_white'], state_df['population'])/100
     print(bdm.shape)
     print(white_per_block.shape)
@@ -251,12 +259,63 @@ def majority_minority(bdm, state_df):
         dist_pop=np.sum(np.multiply(d, state_df['population']))
         dist_p_white=np.divide(dist_white, dist_pop)
         #print(dist_p_white)
+        p_whites.append(dist_p_white)
         if dist_p_white<0.5:
             maj_min.append(1)
         else:
             maj_min.append(0)
+    #print(p_whites)
+    print("End maj min")
     return np.array(maj_min)
 
+def black_belt(bdm, state_df):
+    """
+    Args:
+        bdm: (np.array) binary matrix a_ij = 1 if block i is in district j
+        state_df: (pd.DataFrame) original dataframe. Includes column BlackBelt where 1 means block is in Black Belt
+
+    Returns: (np.array) of an entry for each district where 1 means the district DOES contain part of the Black Belt, 0
+        means it does not
+    """
+    black_belt=[]
+    for d in bdm.T:
+        BB_blocks=np.dot(d, state_df['BlackBelt'])
+        if BB_blocks>0:
+            black_belt.append(1)
+        else:
+            black_belt.append(0)
+    return np.array(black_belt)
+
+def get_solution_tree(leaf_nodes, internal_nodes, ix_to_id, solution_ixs): #TODO this only works if there's only one parent sample
+    """
+    For a solution set, return the centers of every node, as well as all of its parents and grandparents.
+
+    Args:
+        leaf_nodes: (SHPNode list) with node capacity equal to 1 (has no child nodes).
+        internal_nodes: (SHPNode list) with node capacity >1 (has child nodes).
+        ix_to_id: (dict) {index in partition_map: id in nodes list}
+        solution_ixs: (np.ndarray) list of indices of selected districts
+
+    Returns: List of all nodes in solution tree
+
+    """
+    nodes_list=[]
+    id_list=[]
+    #print(internal_nodes)
+    nodes_to_add=[leaf_nodes[ix_to_id[ix]] for ix in solution_ixs]
+    while len(nodes_to_add)>0:
+        node = nodes_to_add.pop()
+        nodes_list.append(node)
+        id_list.append(node.id)
+        parent_id=node.parent_id
+        if parent_id is not None and parent_id not in id_list: #if this has a parent, we want to add it
+            parent=internal_nodes[parent_id]
+            nodes_to_add.append(parent)
+
+    #print(nodes_list)
+    print(id_list)
+
+    return nodes_list
 
 def make_root_partition_to_leaf_map(leaf_nodes, internal_nodes):
     """
@@ -267,6 +326,7 @@ def make_root_partition_to_leaf_map(leaf_nodes, internal_nodes):
         internal_nodes: (SHPNode list) with node capacity >1 (has child nodes).
 
     Returns: (dict) {root partition index: array of leaf node indices}
+            (dict) {index in partition_map: id in nodes list}
 
     """
     def add_children(node, root_partition_id):
@@ -281,6 +341,7 @@ def make_root_partition_to_leaf_map(leaf_nodes, internal_nodes):
     node_to_root_partition = {}
     node_dict = {**internal_nodes, **leaf_nodes}
     id_to_ix = {nid: ix for ix, nid in enumerate(sorted(leaf_nodes))}
+    ix_to_id= {ix: nid for ix, nid in enumerate(sorted(leaf_nodes))}
     root = internal_nodes[0]
     for ix, root_partition in enumerate(root.children_ids):
         for child in root_partition:
@@ -295,4 +356,4 @@ def make_root_partition_to_leaf_map(leaf_nodes, internal_nodes):
             partition_map[partition_ix] = [node_ix]
     partition_map = {ix: np.array(leaf_list) for ix, leaf_list in partition_map.items()}
 
-    return partition_map
+    return partition_map, ix_to_id

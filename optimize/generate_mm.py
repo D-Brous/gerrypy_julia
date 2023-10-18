@@ -1,6 +1,8 @@
 import sys
 sys.path.append('../gerrypy')
 
+#the same as generate.py, but nodes now track how many maj-min districts they are required to make, and we test every pairing
+
 import os
 import time
 import json
@@ -9,26 +11,26 @@ import networkx as nx
 from collections import OrderedDict
 import constants as consts
 from analyze.districts import *
-from data.buffalo_data.load import load_opt_data
-from optimize.center_selection_buffalo import *
+from data.data2020.load import load_opt_data
+from optimize.center_selection import *
 from optimize.partition import *
 from optimize.tree import SHPNode
 from rules.political_boundaries.preservation_constraint import *
 from rules.political_boundaries.preservation_cost_function import *
-from data.buffalo_data.processing import population_tolerance
 
 class DefaultCostFunction:
     def __init__(self, lengths):
         self.lengths = lengths
 
     def get_costs(self, area_df, centers):
-        population = area_df.TOTAL_ADJ.values
+        population = area_df.population.values
         index = list(area_df.index)
-        costs = self.lengths[np.ix_(centers, index)]
+        costs = self.lengths[np.ix_(centers, index)] * ((population / 1000) + 1)
 
         costs **= (1 + random.random())
         return {center: {index[bix]: cost for bix, cost in enumerate(costs[cix])}
                 for cix, center in enumerate(centers)}
+
 
 def flatten(container):
     for i in container:
@@ -52,6 +54,7 @@ class ColumnGenerator:
                 state: (str) 2 letter abbreviation
                 n_districts: (int)
                 population_tolerance: (float) ideal population +/- factor epsilon
+                required_mm: (int) the number of required majority-minority districts
                 max_sample_tries: (int) number of attempts at each node
                 n_samples: (int) the fan-out split width
                 n_root_samples: (int) the split width of the root node w
@@ -72,13 +75,13 @@ class ColumnGenerator:
         """
         state_abbrev = config['state']
         optimization_data_location = config.get('optimization_data', '')
-        state_df, G, lengths, edge_dists = load_opt_data(
+        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev=state_abbrev,
                                                          special_input=optimization_data_location)
         lengths /= 1000
 
         self.state_abbrev = state_abbrev
 
-        ideal_pop = state_df.TOTAL_ADJ.values.sum() / config['n_districts']
+        ideal_pop = state_df.population.values.sum() / config['n_districts']
         max_pop_variation = ideal_pop * config['population_tolerance']
 
         config['max_pop_variation'] = max_pop_variation
@@ -103,12 +106,18 @@ class ColumnGenerator:
 
         self.event_list = []
 
+        if self.config.get('boundary_type') == 'county':
+            tracts = load_tract_shapes(state_abbrev, custom_path=config.get('custom_shape_path', ''))
+            tracts = tracts.rename(columns={'COUNTYFP20': 'COUNTYFP'})
+            self.model_factory = BoundaryPreservationConstraints(
+                tracts, config.get('county_discount_factor', 0.5))
+
         self.cost_fn = DefaultCostFunction(lengths)
 
     def _assign_id(self):
         self.max_id += 1
         return self.max_id
- 
+
     def retry_sample(self, problem_node, sample_internal_nodes, sample_leaf_nodes):
         def get_descendents(node_id):
             if self.config['verbose']:
@@ -160,12 +169,14 @@ class ColumnGenerator:
         """
         completed_root_samples = 0
         n_root_samples = self.config['n_root_samples']
+        required_mm = self.config['required_mm']
 
         root = SHPNode(self.config['n_districts'],
                        list(self.state_df.index),
-                       0, is_root=True)
+                       0, is_root=True, center=None, num_mm=required_mm)
         self.root = root
         self.internal_nodes[root.id] = root
+        #this root is the entire state_df
 
         while completed_root_samples < n_root_samples:
             # For each root partition, we attempt to populate the sample tree
@@ -218,7 +229,8 @@ class ColumnGenerator:
             n_samples = int((n_samples // 1) + (random.random() < n_samples % 1))
         while len(samples) < n_samples and n_trials < self.config['max_sample_tries']:
             partition_start_t = time.time()
-            child_nodes = self.make_partition(area_df, node)
+            child_nodes = self.make_partition(area_df, node) 
+            #print(child_nodes)
             partition_end_t = time.time()
             if child_nodes:
                 self.n_successful_partitions += 1
@@ -244,6 +256,12 @@ class ColumnGenerator:
         """
         children_sizes = node.sample_n_splits_and_child_sizes(self.config)
 
+        mm=node.num_mm
+        children_mm={} #how many mm dists each child will have
+        req_mm={} #how many mm dists each child MUST have.
+                        #Equal to children_mm if the node is only one dist, 0 if more than 1
+        children_mm_list=np.zeros(len(children_sizes)) #children_mm in np array form
+
         # dict : {center_ix : child size}
         children_centers = OrderedDict(self.select_centers(area_df, children_sizes))
 
@@ -261,56 +279,81 @@ class ColumnGenerator:
         costs = self.cost_fn.get_costs(area_df, list(children_centers.keys()))
         connectivity_sets = edge_distance_connectivity_sets(edge_dists, G)
 
-        neighborhoods = area_df.nbhdname.to_dict()
+        counties = area_df.CountyCode.to_dict()
+        split_lim=4 #TODO trial and error
 
-        split_lim=2 #TODO trial and error
+        nonwhite_per_block=np.multiply((100-area_df['p_white']), area_df['population'])/100
 
-        partition_IP, xs, binnbds = make_partition_IP_Buffalo(costs,
+        centers_list = np.array(list(children_centers.keys()))
+
+        print(node.parent_id)
+
+        return_nodes=[]
+        #For every possible maj-min split, repeat whole process. Add all new nodes to return_nodes
+        for i in range(mm+1): #TODO only works for dual splits
+            children_mm[centers_list[0]]=i
+            children_mm[centers_list[1]]=mm-i
+            #print(children_mm)
+            children_mm_list=np.array(list(children_mm.values()))
+            if(np.all(children_sizes-children_mm_list>=0)):
+                #pass children_mm into make_partition_IP_County_MajMin
+                #but if children_sizes is not 1 for a given child, pass in 0 for children_mm
+                #then, if it passes 25% test and if feasible, return new nodes based on children_mm
+                #print(children_sizes)
+                for j in range(len(children_mm_list)):
+                    if children_sizes[j]==1:
+                        req_mm[centers_list[j]]=children_mm_list[j] #this will always be 0 or 1
+                    else:
+                        req_mm[centers_list[j]]=0
+                #print(req_mm)
+
+                #TODO we don't need to run this 3x at the beginning- if not a terminal branch node, should return the same split
+                #if sum(req_mm)=0, run only once
+                partition_IP, xs, BinCounts = make_partition_IP_MajMinReq(costs,
                                              connectivity_sets,
-                                             area_df.TOTAL_ADJ.to_dict(),
-                                             pop_bounds, neighborhoods,split_lim)
+                                             area_df.population.to_dict(),
+                                             pop_bounds, counties, split_lim, nonwhite_per_block, req_mm)
 
-        partition_IP.Params.MIPGap = self.config['IP_gap_tol']
-        partition_IP.update()
-        partition_IP.optimize()
-        try:
-            districting = {i: [j for j in xs[i] if xs[i][j].X > .5]
-                           for i in children_centers}
-            bins = {i: [k for k in binnbds[i] if binnbds[i][k].X > .5]
-                           for i in children_centers}
-            feasible = all([nx.is_connected(nx.subgraph(self.G, distr)) for
-                            distr in districting.values()])
-            if not feasible:
-                print('WARNING: PARTITION NOT CONNECTED')
-        except AttributeError:
-            feasible = False
+                partition_IP.Params.MIPGap = self.config['IP_gap_tol']
+                partition_IP.update()
+                partition_IP.optimize()
+                try:
+                    districting = {i: [j for j in xs[i] if xs[i][j].X > .5]
+                                for i in children_centers}
+                    feasible = all([nx.is_connected(nx.subgraph(self.G, distr)) for
+                                    distr in districting.values()])
+                    if not feasible:
+                        print('WARNING: PARTITION NOT CONNECTED')
+                except AttributeError:
+                    feasible = False
 
-        if self.config['event_logging']:
-            if feasible:
-                self.event_list.append({
-                    'partition': districting,
-                    'sizes': pop_bounds,
-                    'feasible': True,
-                })
-            else:
-                self.event_list.append({
-                    'area': node.area,
-                    'centers': children_centers,
-                    'feasible': False,
-                })
+                if self.config['event_logging']:
+                    if feasible:
+                        self.event_list.append({
+                            'partition': districting,
+                            'sizes': pop_bounds,
+                            'feasible': True,
+                        })
+                    else:
+                        self.event_list.append({
+                            'area': node.area,
+                            'centers': children_centers,
+                            'feasible': False,
+                        })
 
-        if self.config['verbose']:
-            if feasible:
-                print('successful sample')
-            else:
-                print('infeasible')
+                if self.config['verbose']:
+                    if feasible:
+                        print('successful sample')
+                    else:
+                        print('infeasible')
 
-        if feasible:
-            return [SHPNode(pop_bounds[center]['n_districts'], area, self._assign_id(), node.id)
-                    for center, area in districting.items()]
-        else:
-            node.n_infeasible_samples += 1
-            return []
+                if feasible:
+                    return_nodes.extend([SHPNode(pop_bounds[center]['n_districts'], area, self._assign_id(), node.id, False, center, children_mm[center])
+                            for center, area in districting.items()])
+                else:
+                    node.n_infeasible_samples += 1
+                    return []
+        return return_nodes
 
     def select_centers(self, area_df, children_sizes):
         """
@@ -370,21 +413,12 @@ class ColumnGenerator:
 
             ub = distr_pop + pop_deviation / levels_to_leaf
             lb = distr_pop - pop_deviation / levels_to_leaf
-            #ub = 1000000
-            #lb = 1 #TODO
 
             pop_bounds[center] = {
                 'ub': ub,
                 'lb': lb,
                 'n_districts': n_child_districts
             }
-            
-            #TODO
-            #pop_bounds[center] = {
-            #    'ub': 0,
-            #    'lb': 300000,
-            #    'n_districts': n_child_districts
-            #}
 
         return pop_bounds
 
@@ -405,6 +439,7 @@ class ColumnGenerator:
 
         json.dump(self.event_list, open(save_name + '.json', 'w'))
 
+
 if __name__ == '__main__':
     center_selection_config = {
         'selection_method': 'uniform_random',  # one of
@@ -416,8 +451,8 @@ if __name__ == '__main__':
     tree_config = {
         'max_sample_tries': 25,
         'n_samples': 2,
-        'n_root_samples': 2, #TODO this should be 5
-        'max_n_splits': 2,
+        'n_root_samples': 5,
+        'max_n_splits': 5,
         'min_n_splits': 2,
         'max_split_population_difference': 1.5,
         'event_logging': False,
@@ -428,10 +463,9 @@ if __name__ == '__main__':
         'IP_timeout': 10,
     }
     pdp_config = {
-        'state': 'Buffalo',
-        'n_districts': 2, #TODO this should be 9
-        #'population_tolerance': .01, 
-        'population_tolerance': population_tolerance(),
+        'state': 'NY',
+        'n_districts': 26,
+        'population_tolerance': .01,
     }
     base_config = {**center_selection_config,
                    **tree_config,

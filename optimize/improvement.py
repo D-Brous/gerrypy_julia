@@ -19,15 +19,15 @@ def improvement(border_dists, assignments,state_df):
     """
 
     #shared_perims=cut_perimeter(border_dists,assignments,state_df)
-    shared_perims=pd.read_csv(r"C:\Users\krazy\gerrypy\gerrypy\results\buffalo\buffalo1_results_1670530304\shared_perims.csv")
+    shared_perims=pd.read_csv(r"results/buffalo/buffalo1_results_1688399971/shared_perims.csv")
     to_fix=shared_perims[shared_perims['Percent Shared Perimeter']>0.6]
     print(to_fix)
 
     for index,row in to_fix.iterrows():
         i=assignments.index[assignments['GEOID20'] == row['GEOID20']].tolist()[0]
-        assignments.loc[i,'District2']=row['Shared District']
+        assignments.loc[i,'District0']=row['Shared District']
     
-    save_path=r"C:\Users\krazy\gerrypy\gerrypy\results\buffalo\buffalo1_results_1670530304"
+    save_path=r"C:\Users\krazy\gerrypy\gerrypy\results\buffalo"
     assignments.to_csv(os.path.join(save_path, 'improved_assignments.csv'), index=False)
 
 
@@ -75,7 +75,7 @@ def cut_perimeter(border_dists, assignments,state_df):
     shared_perims['GEOID20']=[state_df.loc[i,'GEOID20'] for i in sorted_p.row]
     shared_perims['Shared District']=[districts[j] for j in sorted_p.col]
     shared_perims['Percent Shared Perimeter']=sorted_p.data
-    save_path=r"C:\Users\krazy\gerrypy\gerrypy\results\buffalo\buffalo1_results_1670530304"
+    save_path=r"results/buffalo/buffalo1_results_1688399971/"
     shared_perims.to_csv(os.path.join(save_path, 'shared_perims.csv'), index=False)
 
     return(shared_perims)
@@ -112,11 +112,11 @@ if __name__ == '__main__':
     #G = nx.read_gpickle(adjacency_graph_path)
     #print('G')
 
-    #border_dists = np.genfromtxt(r"C:\Users\krazy\gerrypy\gerrypy\data\buffalo_data\optimization_data\border_dists.csv", delimiter=',')
-    assignments= pd.read_csv(r"C:\Users\krazy\gerrypy\gerrypy\results\buffalo\buffalo1_results_1670530304\buffalo1_1670530358assignments.csv")
+    #border_dists = np.genfromtxt(r"data/buffalo_data/optimization_data/border_dists.csv", delimiter=',')
+    assignments= pd.read_csv(r"results/buffalo/buffalo1_results_1688399971/buffalo1_1688400559assignments.csv")
 
-    #state_df=pd.read_csv(r"C:\Users\krazy\gerrypy\gerrypy\data\buffalo_data\optimization_data\state_df.csv")
+    #state_df=pd.read_csv(r"data/buffalo_data/optimization_data/state_df.csv")
     print('S')
 
-    #cut_perimeter(border_dists,assignments['District2'],state_df)
+    #cut_perimeter(border_dists,assignments['District0'],state_df)
     improvement(1,assignments,3)

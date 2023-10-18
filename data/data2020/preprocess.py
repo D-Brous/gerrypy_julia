@@ -50,6 +50,11 @@ def preprocess_tracts(state_abbrev):
     state_df = state_df.reset_index()
     state_df['CountyCode'] = state_df.GEOID.str[2:5]
 
+    #create an indicator that is 1 if the block is in the Black Belt, 0 if not
+    def set_BB_indicator(x):
+        return 1 if x in ['063', '013', '131', '119', '113', '109', '107', '105', '101', '091', '087', '085', '065', '047', '041', '023', '011', '005'] else 0
+    state_df['BlackBelt'] = state_df['CountyCode'].apply(set_BB_indicator)
+
     shape_list = tract_shapes.geometry.to_list()
     adj_graph = libpysal.weights.Rook.from_iterable(shape_list).to_networkx()
 
@@ -114,4 +119,4 @@ def preprocess_all_states():
 
 if __name__ == "__main__":
     #preprocess_all_states()
-    preprocess_tracts('AL')
+    preprocess_tracts('WY')

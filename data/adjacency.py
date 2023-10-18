@@ -1,6 +1,6 @@
 import numpy as np
 import networkx as nx
-import pysal
+import libpysal
 import time
 from scipy.spatial.distance import cdist, pdist, squareform
 
@@ -21,7 +21,7 @@ def connect_components(gdf, inclusion_factor=1.5):
     outer = gdf.geometry.unary_union
     bbox = outer.envelope.buffer(1000)
     shape_list.append(bbox.difference(outer))
-    G = pysal.lib.weights.Rook.from_iterable(shape_list).to_networkx()
+    G = libpysal.weights.Rook.from_iterable(shape_list).to_networkx()
     # len(gdf) indexes boundary dummy node
     boundaries = set(G[len(gdf)])
     G.remove_node(len(gdf))

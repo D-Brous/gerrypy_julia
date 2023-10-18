@@ -194,7 +194,35 @@ def load_custom_mapping(state, location):
     old_to_new = pickle.load(open(os.path.join(file_path, 'old_ix_to_new_ix.p'), 'rb'))
     return new_to_old, old_to_new
 
-if __name__ == "__main__":
-    load_opt_data('AL')
+def get_population_tolerance(state):
+    #get the pop_tolerance to use in the generate class
 
+    #load in df with current dists
+    curent_dists_path = os.path.join(constants.OPT_DATA_PATH_2020,
+                                 state,
+                                 'current_dists.csv')
+    current_df = pd.read_csv(curent_dists_path)
+    current_df['GEOID'] = current_df['GEOID'].astype(str)
+    current_df['GEOID'] = '0'+current_df['GEOID']
+    current_df = current_df.set_index('GEOID')
+
+    #join w state_df
+    state_df=load_state_df(state)
+    state_df = state_df.set_index('GEOID')
+    df = state_df.join(current_df)
+
+    #get the ideal population and the maximum deviation
+    populations = df.groupby(['Districts'])['population'].sum()
+    print(populations)
+    ideal_pop=np.mean(populations)
+    print(ideal_pop)
+    pop_difs = np.abs(populations-ideal_pop)
+    print(pop_difs)
+    pop_tolerance = max(pop_difs)/ideal_pop
+    print(pop_tolerance)
+    return pop_tolerance
+
+if __name__ == "__main__":
+    #load_opt_data('LA')
+    get_population_tolerance('AL')
 
