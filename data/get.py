@@ -4,8 +4,8 @@ and preprocessing of all optimization data structures
 NOTE: must manually download all election data from Box repository
 """
 
-from gerrypy.data import shapefiles, acs, preprocess, precinct_state_wrappers
-from gerrypy import constants
+from gerrypy_julia.data import shapefiles, acs, preprocess, precinct_state_wrappers
+from gerrypy_julia import constants
 import pandas as pd
 import os
 

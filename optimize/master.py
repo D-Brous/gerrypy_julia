@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../gerrypy')
+sys.path.append('../gerrypy_julia')
 
 from gurobipy import *
 import numpy as np
@@ -56,15 +56,15 @@ def make_master(k, block_district_matrix, costs,
     master.addConstr(quicksum(x[j] for j in D) == k,
                      name="totalDistricts")
     
-    #at least 2 majority minority districts
-    master.addConstr(quicksum(maj_min[j] * x[j] for j in D)>=2, name="majorityMinority") #TODO 2
+    # #at least 2 majority minority districts
+    # master.addConstr(quicksum(maj_min[j] * x[j] for j in D)>=2, name="majorityMinority") #TODO 2
 
-    #Black Belt in no more than 7 districts (present to see slack) (Not needed)
-    master.addConstr(quicksum(bb[j] * x[j] for j in D)>=0, name="blackBelt")
+    # #Black Belt in no more than 7 districts (present to see slack) (Not needed)
+    # master.addConstr(quicksum(bb[j] * x[j] for j in D)>=0, name="blackBelt")
 
-    for k in D:
-        master.addConstr(maj_min[k] * x[k] >=0, #TODO
-                          name='testm_%s' % k)
+    # for k in D:
+    #     master.addConstr(maj_min[k] * x[k] >=0, #TODO
+    #                       name='testm_%s' % k)
 
     if opt_type == 'minimize':
         master.setObjective(quicksum(costs[j] * x[j] + 10000*bb[j] * x[j] for j in D), GRB.MINIMIZE)

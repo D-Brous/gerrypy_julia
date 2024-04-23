@@ -2,9 +2,10 @@
 
 You must use this to load all data or else indices may become inconsistent."""
 
+import sys
+sys.path.append('../gerrypy_julia')
 
 import pickle
-from gerrypy import constants
 import networkx as nx
 import os
 import glob
@@ -12,6 +13,8 @@ import numpy as np
 import scipy.sparse as sp
 import pandas as pd
 import geopandas as gpd
+
+import constants
 
 
 def load_state_df(state_abbrev):
@@ -69,7 +72,7 @@ def load_acs(state_abbrev, year=None, county=False):
     return pd.read_csv(state_path, low_memory=False).sort_values('GEOID').reset_index(drop=True)
 
 
-def load_tract_shapes(state_abbrev, year=None, custom_path=''):
+def load_tract_shapes(state_abbrev, year=None, custom_path='', granularity='tract'):
     """
     Args:
         state_abbrev: (str) two letter state abbreviation
@@ -84,10 +87,11 @@ def load_tract_shapes(state_abbrev, year=None, custom_path=''):
         year = constants.ACS_BASE_YEAR
     shape_fname = state_abbrev + '_' + str(year)
     tract_shapes = gpd.read_file(os.path.join(constants.CENSUS_SHAPE_PATH,
+                                              granularity,
                                               shape_fname))
     tract_shapes = tract_shapes.to_crs("EPSG:3078")  # meters
-    tract_shapes = tract_shapes[tract_shapes.ALAND > 0]
-    return tract_shapes.sort_values(by='GEOID').reset_index(drop=True)
+    #tract_shapes = tract_shapes[tract_shapes.ALAND > 0]
+    return tract_shapes.sort_values(by='GEOID10').reset_index(drop=True)
 
 
 def load_adjacency_graph(state_abbrev):
@@ -114,7 +118,7 @@ def load_district_shapes(state_abbrev=None, year=2018):
         return gdf
 
 
-def load_opt_data(state_abbrev, special_input='', use_spt_matrix=False):
+def load_opt_data(state_abbrev, special_input='', use_spt_matrix=False, opt_data_path=constants.OPT_DATA_PATH):
     """
     Args:
         state_abbrev: (str) two letter state abbreviation
@@ -125,7 +129,7 @@ def load_opt_data(state_abbrev, special_input='', use_spt_matrix=False):
     Returns: (pd.DataFrame, nx.Graph, np.array, dict) tuple of optimization
         data structures
     """
-    data_base_path = os.path.join(constants.OPT_DATA_PATH, special_input, state_abbrev)
+    data_base_path = os.path.join(opt_data_path, special_input, state_abbrev)
     adjacency_graph_path = os.path.join(data_base_path, 'G.p')
     state_df_path = os.path.join(data_base_path, 'state_df.csv')
 

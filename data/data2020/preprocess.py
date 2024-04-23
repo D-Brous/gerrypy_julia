@@ -1,11 +1,11 @@
 import sys
-sys.path.append('../gerrypy')
+sys.path.append('../gerrypy_julia')
 
 import numpy as np
 import networkx as nx
 import os
-import pygeos
-import pysal
+# import pygeos
+# import pysal
 import libpysal
 import pickle
 import pandas as pd
@@ -14,7 +14,7 @@ from data.adjacency import connect_components
 from data.data2020.load import *
 from data.columns import CENSUS_VARIABLE_TO_NAME
 from scipy.spatial.distance import pdist, squareform
-import dill
+# import dill
 
 def preprocess_tracts(state_abbrev):
     """
@@ -119,4 +119,4 @@ def preprocess_all_states():
 
 if __name__ == "__main__":
     #preprocess_all_states()
-    preprocess_tracts('WY')
+    preprocess_tracts('AL')

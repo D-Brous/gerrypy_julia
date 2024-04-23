@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../gerrypy')
+sys.path.append('../gerrypy_julia')
 
 import math
 import random

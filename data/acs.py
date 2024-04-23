@@ -1,3 +1,6 @@
+import sys
+sys.path.append('../gerrypy_julia')
+
 import os
 import json
 import requests
@@ -25,7 +28,7 @@ def download_all_county_data(states=None, years=['2018']):
         states = [str(state_abbrev) for _, state_abbrev, _ in constants.STATE_IDS]
     for y in years:
         for state in states:
-            download_census_tables(state=state, year=y, county=True)
+            download_census_tables(state=state, year=y, granularity='block')
 
 
 def download_all_tract_data(states=None, years=['2018']):
@@ -33,10 +36,10 @@ def download_all_tract_data(states=None, years=['2018']):
         states = [str(state_abbrev) for _, state_abbrev, _ in constants.STATE_IDS]
     for y in years:
         for state in states:
-            download_census_tables(state=state, year=y, county=False)
+            download_census_tables(state=state, year=y, granularity='tract')
 
 
-def download_census_tables(state=None, year=None, county=False):
+def download_census_tables(state=None, year=None, granularity='tract'):
     """Download census tables for every census tract is areas.
 
     state : str - state abbreviation (Two capital letters)
@@ -50,7 +53,15 @@ def download_census_tables(state=None, year=None, county=False):
     year = str(year)
     BASE_URL = "https://api.census.gov/data/%s/%s" % (year, DATASET)
 
-    base_save_dir = constants.COUNTY_DATA_PATH if county else constants.TRACT_DATA_PATH
+    if granularity=='block':
+        base_save_dir = constants.BLOCK_DATA_PATH
+    elif granularity=='block_group':
+        base_save_dir = constants.BLOCK_GROUP_DATA_PATH
+    elif granularity=='tract':
+        base_save_dir = constants.TRACT_DATA_PATH
+    elif granularity=='county':
+        base_save_dir = constants.COUNTY_DATA_PATH
+    #base_save_dir = constants.COUNTY_DATA_PATH if county else constants.TRACT_DATA_PATH
 
     data_name = year + "_" + DATASET.split("/")[1]
     path_name = os.path.join(base_save_dir, data_name)
@@ -59,7 +70,7 @@ def download_census_tables(state=None, year=None, county=False):
     except FileExistsError:
         pass
     state_fips = constants.ABBREV_DICT[state][constants.FIPS_IX]
-    granularity = 'county' if county else 'tract'
+    #granularity = 'county' if county else 'tract'
 
     save_path = os.path.join(path_name, state + '_%s.csv' % granularity)
     if os.path.exists(save_path):
@@ -79,7 +90,7 @@ def download_census_tables(state=None, year=None, county=False):
     for table in TABLES:
 
         table_url = BASE_URL + "/profile?get=group(%s)" % table
-        if county:
+        if granularity=='county':
             table_url += "&for=county:*&in=state:%s" % state_fips
         else:
             table_url += "&for=tract:*&in=state:%s" % state_fips
@@ -97,9 +108,11 @@ def download_census_tables(state=None, year=None, county=False):
 
         df = pd.DataFrame(json_df[1:], columns=json_df[0])
 
+        df.to_csv(os.path.join(path_name, state + table + '_%s.csv' % granularity))
+
         if int(year) < 2011:
             df.rename(columns={"GEO_ID": "GEOID"}, inplace=True)
-            if county:
+            if granularity=='county':
                 df['GEOID'] = df['GEOID'].apply(lambda x: x.split("US")[1]) \
                     .astype(str).apply(lambda x: x.zfill(5))
             else:
@@ -108,7 +121,7 @@ def download_census_tables(state=None, year=None, county=False):
         else:
             df['state'] = df['state'].astype(str).apply(lambda x: x.zfill(2))
             df['county'] = df['county'].astype(str).apply(lambda x: x.zfill(3))
-            if county:
+            if granularity=='county':
                 df['GEOID'] = df['state'] + df['county']
             else:
                 df['tract'] = df['tract'].astype(str).apply(lambda x: x.zfill(6))
@@ -125,4 +138,4 @@ def download_census_tables(state=None, year=None, county=False):
 
 
 if __name__ == '__main__':
-    download_all_tract_data()
+    download_all_tract_data(states=['LA'], years=['2018'])

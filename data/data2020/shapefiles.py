@@ -9,7 +9,7 @@ these shapefiles and change the year as appropriate.
 Saves data in shapes/STATE_year."""
 
 import sys
-sys.path.append('../gerrypy')
+sys.path.append('../gerrypy_julia')
 
 import os
 from io import BytesIO
@@ -247,4 +247,4 @@ def download_all_district_shapes():
 
 
 if __name__ == "__main__":
-    download_state_shapes(states=['WY'], year=2020)
+    download_state_shapes(states=['AL'], year=2020)

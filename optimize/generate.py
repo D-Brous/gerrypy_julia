@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../gerrypy')
+sys.path.append('../gerrypy_julia')
 
 import os
 import time
@@ -9,7 +9,8 @@ import networkx as nx
 from collections import OrderedDict
 import constants as consts
 from analyze.districts import *
-from data.data2020.load import load_opt_data
+#from data.data2020.load import load_opt_data
+from data.load import load_opt_data
 from optimize.center_selection import *
 from optimize.partition import *
 from optimize.tree import SHPNode
@@ -72,6 +73,10 @@ class ColumnGenerator:
         """
         state_abbrev = config['state']
         optimization_data_location = config.get('optimization_data', '')
+        print("")
+        if optimization_data_location=='':
+            print("it's empty string")
+        print("")
         state_df, G, lengths, edge_dists = load_opt_data(state_abbrev=state_abbrev,
                                                          special_input=optimization_data_location)
         lengths /= 1000
@@ -270,16 +275,22 @@ class ColumnGenerator:
         costs = self.cost_fn.get_costs(area_df, list(children_centers.keys()))
         connectivity_sets = edge_distance_connectivity_sets(edge_dists, G)
 
-        counties = area_df.CountyCode.to_dict()
-        split_lim=3 #TODO trial and error
+        #counties = area_df.CountyCode.to_dict()
+        #split_lim=3 #TODO trial and error
 
-        nonwhite_per_block=np.multiply((100-area_df['p_white']), area_df['population'])/100
+        #nonwhite_per_block=np.multiply((100-area_df['p_white']), area_df['population'])/100
 
         #TODO do this for every possible maj-min split
-        partition_IP, xs, BinCounts,m = make_partition_IP_County_MajMin(costs,
+        """
+        partition_IP, xs, BinCounts, m = make_partition_IP_County_MajMin(costs,
                                              connectivity_sets,
                                              area_df.population.to_dict(),
                                              pop_bounds, counties, split_lim, nonwhite_per_block)
+        """
+        partition_IP, xs = make_partition_IP(costs, 
+                                                          connectivity_sets, 
+                                                          area_df.population.to_dict(),
+                                                          pop_bounds)
         
         #partition_IP, xs, = make_partition_IP(costs,
         #                                     connectivity_sets,
@@ -295,8 +306,8 @@ class ColumnGenerator:
         try:
             districting = {i: [j for j in xs[i] if xs[i][j].X > .5]
                            for i in children_centers}
-            bins = {i: [k for k in BinCounts[i] if BinCounts[i][k].X > .5]
-                           for i in children_centers}
+            #bins = {i: [k for k in BinCounts[i] if BinCounts[i][k].X > .5]
+            #               for i in children_centers}
             #print(bins)
             feasible = all([nx.is_connected(nx.subgraph(self.G, distr)) for
                             distr in districting.values()])
