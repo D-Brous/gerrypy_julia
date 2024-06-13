@@ -7,3 +7,4 @@ data/district_shapes/
 data/optimization_data/
 data/shapes/
 *.DS_Store
+python==3.9.18
