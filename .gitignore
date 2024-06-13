@@ -1,0 +1,9 @@
+.myvenv3
+results/
+data/acs_data/
+data/buffalo_data/
+data/data2020/
+data/district_shapes/
+data/optimization_data/
+data/shapes/
+*.DS_Store

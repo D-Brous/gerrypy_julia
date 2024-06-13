@@ -43,14 +43,12 @@ def preprocess_tracts(state_abbrev, opt_data_path=constants.OPT_DATA_PATH, year=
         state_abbrev: (str) two letter state abbreviation
     """
 
-    tract_shapes = load_tract_shapes(state_abbrev, year=year, granularity=granularity)
-    if 'GEOID10' in tract_shapes.columns:
-        tract_shapes.rename(columns={'GEOID10' : 'GEOID'}, inplace=True)
+    census_shapes = load_census_shapes(state_abbrev, year=year, granularity=granularity)
     state_df = pd.DataFrame({
-        'x': tract_shapes.centroid.x,
-        'y': tract_shapes.centroid.y,
-        'area': tract_shapes.area / 1000**2,  # sq km
-        'GEOID': tract_shapes.GEOID.apply(lambda x: str(x).zfill(11)),
+        'x': census_shapes.centroid.x,
+        'y': census_shapes.centroid.y,
+        'area': census_shapes.area / 1000**2,  # sq km
+        'GEOID': census_shapes.GEOID.apply(lambda x: str(x).zfill(11)),
     })
 
     # Join location data with demographic data
@@ -74,26 +72,26 @@ def preprocess_tracts(state_abbrev, opt_data_path=constants.OPT_DATA_PATH, year=
         demo_data = demo_data[list(CENSUS_VARIABLE_TO_NAME[str(year)])]
         demo_data = demo_data.rename(columns=CENSUS_VARIABLE_TO_NAME[str(year)])
     else:
-        demo_data = demo_data[['TOTPOP', 'VAP', 'BVAP']]
-        demo_data.rename(columns={'TOTPOP' : 'population'}, inplace=True)
+        demo_data = demo_data[['TOTPOP', 'VAP', 'BVAP', "WVAP"]]
+        demo_data.rename(columns={'TOTPOP' : 'population', 'WVAP' : 'p_white'}, inplace=True)
     demo_data[demo_data < 0] = 0
 
     state_df = state_df.set_index('GEOID')
     state_df = state_df.join(demo_data)
     state_df = state_df.reset_index()
 
-    shape_list = tract_shapes.geometry.to_list()
+    shape_list = census_shapes.geometry.to_list()
     adj_graph = libpysal.weights.Rook.from_iterable(shape_list).to_networkx()
 
     if not nx.is_connected(adj_graph):
-        adj_graph = connect_components(tract_shapes)
+        adj_graph = connect_components(census_shapes)
 
     edge_dists = dict(nx.all_pairs_shortest_path_length(adj_graph))
 
     centroids = state_df[['x', 'y']].values
     plengths = squareform(pdist(centroids))
 
-    save_path = os.path.join(opt_data_path, state_abbrev)
+    save_path = os.path.join(opt_data_path, granularity, state_abbrev)
     os.makedirs(save_path, exist_ok=True)
 
     state_df.to_csv(os.path.join(save_path, 'state_df.csv'), index=False)
@@ -103,3 +101,4 @@ def preprocess_tracts(state_abbrev, opt_data_path=constants.OPT_DATA_PATH, year=
 
 if __name__ == '__main__':
     preprocess_tracts('LA', year=2010, granularity='block_group', use_name_map=False)
+    #preprocess_tracts('LA', year=2010, granularity='tract')

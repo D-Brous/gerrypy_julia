@@ -1,0 +1,8 @@
+geopandas==0.13.2
+requests==2.31.0
+networkx==2.8
+libpysal==4.7.0
+scikit-learn==1.2.2
+spatial_utils==0.0.1
+shapely==2.0.1
+gurobipy==10.0.2

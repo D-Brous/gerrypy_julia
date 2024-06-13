@@ -39,6 +39,8 @@ def flatten(container):
         else:
             yield i
 
+def flatten2(lis_of_lis):
+    return [element for lis in lis_of_lis for element in lis]
 
 class ColumnGenerator:
     """
@@ -73,17 +75,17 @@ class ColumnGenerator:
         """
         state_abbrev = config['state']
         optimization_data_location = config.get('optimization_data', '')
-        print("")
-        if optimization_data_location=='':
-            print("it's empty string")
-        print("")
+        #print("")
+        #if optimization_data_location=='':
+        #    print("it's empty string")
+        #print("")
         state_df, G, lengths, edge_dists = load_opt_data(state_abbrev=state_abbrev,
                                                          special_input=optimization_data_location)
         lengths /= 1000
 
         self.state_abbrev = state_abbrev
 
-        ideal_pop = state_df.population.values.sum() / config['n_districts']
+        ideal_pop = state_df['population'].values.sum() / config['n_districts']
         max_pop_variation = ideal_pop * config['population_tolerance']
 
         config['max_pop_variation'] = max_pop_variation
@@ -115,12 +117,14 @@ class ColumnGenerator:
                 tracts, config.get('county_discount_factor', 0.5))
 
         self.cost_fn = DefaultCostFunction(lengths)
+        #random.seed(0)
+        #np.random.seed(0)
 
     def _assign_id(self):
         self.max_id += 1
         return self.max_id
 
-    def retry_sample(self, problem_node, sample_internal_nodes, sample_leaf_nodes):
+    def retry_sample(self, problem_node, sample_internal_nodes, sample_leaf_nodes, debug=False):
         def get_descendents(node_id):
             if self.config['verbose']:
                 print('executing get_descendents()')
@@ -129,8 +133,9 @@ class ColumnGenerator:
                                   for child in partition]
             indirect_descendants = [get_descendents(child) for child in direct_descendents
                                     if (child in sample_internal_nodes)]
-            return flatten(direct_descendents + indirect_descendants)
-
+            return direct_descendents + flatten2(indirect_descendants)
+        if problem_node.id == 0:
+            raise RuntimeError('Root partition failed')
         if problem_node.parent_id == 0:
             raise RuntimeError('Root partition region not subdivisible')
         parent = sample_internal_nodes[problem_node.parent_id]
@@ -140,7 +145,8 @@ class ColumnGenerator:
             # Failure couldn't be corrected
             if self.config['verbose']:
                 print(problem_node.area)
-            raise RuntimeError('Unable to sample tree')
+            return self.retry_sample(parent, sample_internal_nodes, sample_leaf_nodes, debug=debug)
+            #raise RuntimeError('Unable to sample tree')
 
         branch_ix, branch_ids = parent.get_branch(problem_node.id)
         nodes_to_delete = set()
@@ -152,8 +158,12 @@ class ColumnGenerator:
 
         for node_id in nodes_to_delete:
             if node_id in sample_leaf_nodes:
+                if debug:
+                    self.config['debug_file'].write(f'{node_id}, ')
                 del sample_leaf_nodes[node_id]
             elif node_id in sample_internal_nodes:
+                if debug:
+                    self.config['debug_file'].write(f'{node_id}, ')
                 del sample_internal_nodes[node_id]
 
         parent.delete_branch(branch_ix)
@@ -179,6 +189,11 @@ class ColumnGenerator:
         self.internal_nodes[root.id] = root
         #this root is the entire state_df
 
+        debug = False
+        if self.config['debug_file'] is not None:
+            debug = True
+            self.config['debug_file'].write(f'Logged root node 0 at time {time.thread_time()}\n')
+
         while completed_root_samples < n_root_samples:
             # For each root partition, we attempt to populate the sample tree
             # If failure in particular root, prune all work from that root
@@ -189,30 +204,51 @@ class ColumnGenerator:
             try:
                 print('Root sample number', completed_root_samples)
                 while len(self.sample_queue) > 0:
-                    node = self.sample_queue.pop()
-                    child_samples = self.sample_node(node)
+                    #node = self.sample_queue.pop() #DFS
+                    node = self.sample_queue.pop(0) #BFS
+                    child_samples = self.sample_node(node, debug)
                     if len(child_samples) == 0:  # Failure detected
                         self.failed_regions.append(node.area)
                         # Try to correct failure
-                        self.retry_sample(node, sample_internal_nodes, sample_leaf_nodes)
+                        
+                        if debug:
+                            self.config['debug_file'].write(f'Failed split of node {node.id}.\n    Deleted nodes:\n    [')
+                        self.retry_sample(node, sample_internal_nodes, sample_leaf_nodes, debug=debug)
+                        if debug:
+                            #num_deleted_nodes = num_completed_samples - len(sample_internal_nodes)
+                            #self.config['debug_file'].write(f'Failed split: {num_deleted_nodes} nodes deleted. Remaining sample queue:\n[')
+                            self.config['debug_file'].write(f']\n    Remaining sample queue:\n    [')
+                            for n in self.sample_queue:
+                                self.config['debug_file'].write(f'{n.id}, ')
+                            self.config['debug_file'].write(']\n')
+                            num_nodes = len(sample_internal_nodes) + len(sample_leaf_nodes) + len(self.sample_queue)
+                            self.config['debug_file'].write(f'    Total number of nodes in tree after deletion: {num_nodes}\n')
                         continue
                     for child in child_samples:
                         if child.n_districts == 1:
                             sample_leaf_nodes[child.id] = child
+                            if debug:
+                                self.config['debug_file'].write(f'Logged leaf node {child.id} at time {time.thread_time()}\n')
                         else:
                             self.sample_queue.append(child)
+                            #if debug:
+                            #    self.config['debug_file'].write(f'{child.id}, internal, {child.n_districts}, {len(child.area)}, {time.thread_time()}\n')
                     if not node.is_root:
                         sample_internal_nodes[node.id] = node
+                        if debug:
+                            self.config['debug_file'].write(f'Logged internal node {node.id} at time {time.thread_time()}\n')
                 self.internal_nodes.update(sample_internal_nodes)
                 self.leaf_nodes.update(sample_leaf_nodes)
                 completed_root_samples += 1
-            except RuntimeError:  # Stop trying on root partition
-                print('Root sample failed')
+            except RuntimeError as error:  # Stop trying on root partition
+                print(f'Root sample failed: {str(error)}')
+                if debug:
+                    self.config['debug_file'].write('\n-------------------------------Root sample failed-------------------------------\n')
                 self.root.children_ids = self.root.children_ids[:-1]
                 self.root.partition_times = self.root.partition_times[:-1]
                 self.failed_root_samples += 1
 
-    def sample_node(self, node):
+    def sample_node(self, node, debug=False):
         """
         Generate children partitions of a region contained by [node].
 
@@ -222,6 +258,7 @@ class ColumnGenerator:
         Returns: A flattened list of child regions from multiple partitions.
 
         """
+        initial_time = time.thread_time()
         area_df = self.state_df.loc[node.area]
         samples = []
         n_trials = 0
@@ -242,8 +279,17 @@ class ColumnGenerator:
                 self.n_infeasible_partitions += 1
                 node.n_infeasible_samples += 1
             n_trials += 1
-
-        return [node for sample in samples for node in sample]
+        #if len(node.partition_times) > 0:
+        #    print(sum(node.partition_times)/len(node.partition_times))
+        children = [node for sample in samples for node in sample]
+        if debug:
+            self.config['debug_file'].write(f'Split node {node.id} with {n_trials} trials in {time.thread_time()-initial_time} sec. Children are:\n')
+            for child in children:
+                if child.n_districts == 1:
+                    self.config['debug_file'].write(f'    {child.id}, leaf, {child.n_districts}, {len(child.area)}\n')
+                else:
+                    self.config['debug_file'].write(f'    {child.id}, internal, {child.n_districts}, {len(child.area)}\n')
+        return children
 
     def make_partition(self, area_df, node):
         """
@@ -289,7 +335,7 @@ class ColumnGenerator:
         """
         partition_IP, xs = make_partition_IP(costs, 
                                                           connectivity_sets, 
-                                                          area_df.population.to_dict(),
+                                                          area_df['population'].to_dict(),
                                                           pop_bounds)
         
         #partition_IP, xs, = make_partition_IP(costs,
@@ -343,8 +389,9 @@ class ColumnGenerator:
                 print('successful sample')
             else:
                 print('infeasible')
-
+        
         if feasible:
+            #print([len(area) for _, area in districting.items()])
             return [SHPNode(pop_bounds[center]['n_districts'], area, self._assign_id(), node.id, False, center)
                     for center, area in districting.items()]
         else:

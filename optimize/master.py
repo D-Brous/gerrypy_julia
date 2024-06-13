@@ -268,6 +268,36 @@ def majority_minority(bdm, state_df):
     print("End maj min")
     return np.array(maj_min)
 
+def majority_black(bdm, state_df):
+    """
+
+    Args:
+        bdm: (np.array) binary matrix a_ij = 1 if block i is in district j
+        state_df: (pd.DataFrame) original dataframe. Must include race data
+
+    Returns: (np.array) of an entry for each district where 0 means the district IS majority-black
+        and 1 means it's not
+
+    """
+    print("Begin maj black")
+    maj_black=[]
+    p_blacks=[]
+    #print(bdm.shape)
+    #print(state_df['BVAP'].shape)
+    for d in bdm.T:
+        dist_black=np.sum(np.multiply(d, state_df['BVAP']))
+        dist_pop=np.sum(np.multiply(d, state_df['VAP']))
+        dist_p_black=np.divide(dist_black, dist_pop)
+        #print(dist_p_white)
+        p_blacks.append(dist_p_black)
+        if dist_p_black<0.5:
+            maj_black.append(0)
+        else:
+            maj_black.append(1)
+    #print(p_whites)
+    print("End maj black")
+    return np.array(maj_black)
+
 def black_belt(bdm, state_df):
     """
     Args:
@@ -329,31 +359,31 @@ def make_root_partition_to_leaf_map(leaf_nodes, internal_nodes):
             (dict) {index in partition_map: id in nodes list}
 
     """
-    def add_children(node, root_partition_id):
+    def add_children(node, root_partition_ix):
         if node.n_districts > 1:
             for partition in node.children_ids:
-                for child in partition:
-                    add_children(node_dict[child], root_partition_id)
+                for child_id in partition:
+                    add_children(node_dict[child_id], root_partition_ix)
         else:
-            node_to_root_partition[id_to_ix[node.id]] = root_partition_id
+            node_to_root_partition[id_to_ix[node.id]] = root_partition_ix
 
     # Create mapping from leaf ix to root partition ix
     node_to_root_partition = {}
     node_dict = {**internal_nodes, **leaf_nodes}
-    id_to_ix = {nid: ix for ix, nid in enumerate(sorted(leaf_nodes))}
-    ix_to_id= {ix: nid for ix, nid in enumerate(sorted(leaf_nodes))}
+    id_to_ix = {node_id: node_ix for node_ix, node_id in enumerate(sorted(leaf_nodes))}
+    ix_to_id= {node_ix: node_id for node_ix, node_id in enumerate(sorted(leaf_nodes))}
     root = internal_nodes[0]
-    for ix, root_partition in enumerate(root.children_ids):
-        for child in root_partition:
-            add_children(node_dict[child], ix)
+    for root_partition_ix, root_partition in enumerate(root.children_ids):
+        for child_id in root_partition:
+            add_children(node_dict[child_id], root_partition_ix)
 
     # Create inverse mapping
     partition_map = {}
-    for node_ix, partition_ix in node_to_root_partition.items():
+    for node_ix, root_partition_ix in node_to_root_partition.items():
         try:
-            partition_map[partition_ix].append(node_ix)
+            partition_map[root_partition_ix].append(node_ix)
         except KeyError:
-            partition_map[partition_ix] = [node_ix]
-    partition_map = {ix: np.array(leaf_list) for ix, leaf_list in partition_map.items()}
+            partition_map[root_partition_ix] = [node_ix]
+    partition_map = {node_ix: np.array(leaf_list) for node_ix, leaf_list in partition_map.items()}
 
     return partition_map, ix_to_id

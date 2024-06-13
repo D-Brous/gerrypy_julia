@@ -229,4 +229,5 @@ def download_all_district_shapes():
 
 if __name__ == "__main__":
     #download_all_district_shapes()
-    download_state_shapes(states=['LA'], year=2010, granularity='block_group')
+    #download_state_shapes(states=['LA'], year=2010, granularity='block_group')
+    download_state_shapes(states=['LA'], year=2010, granularity='tract')

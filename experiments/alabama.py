@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../gerrypy')
+sys.path.append('../gerrypy_julia')
 
 #from optimize.generate_mm import ColumnGenerator
 from optimize.generate import ColumnGenerator
@@ -38,6 +38,7 @@ class Experiment:
 
         print('Starting trial', base_config)
         cg = ColumnGenerator(base_config)
+        x = input("input something")
         generation_start_t = time.time()
         cg.generate()
         generation_t = time.time() - generation_start_t
@@ -135,7 +136,7 @@ def master_solutions(bdm,leaf_nodes, internal_nodes, state_df, lengths, G, maj_m
         }
         print(opt_cols)
         print(sol_dict[partition_ix]['solution_ixs'])
-        print(maj_min[sol_dict[partition_ix]['solution_ixs']])
+        #print(maj_min[sol_dict[partition_ix]['solution_ixs']])
         #constraint = model.getConstrByName("majorityMinority")
         #print(constraint.slack)
 
@@ -147,16 +148,16 @@ def master_solutions(bdm,leaf_nodes, internal_nodes, state_df, lengths, G, maj_m
         elif status==3:
             print("WARNING: no optimal solution is possible. Solving relaxation.")
 
-        constraintm_slacks=[]
-        for k in range(len(cost_coeffs)):
-            constraintm=model.getConstrByName('testm_%s' % k)
-            constraintm_slacks.append(constraintm.slack)
-            if constraintm.slack!=0:
-                print(str(k)+": "+str(int(constraintm.slack)))
-                print(dvars[k])
+        # constraintm_slacks=[]
+        # for k in range(len(cost_coeffs)):
+        #     constraintm=model.getConstrByName('testm_%s' % k)
+        #     constraintm_slacks.append(constraintm.slack)
+        #     if constraintm.slack!=0:
+        #         print(str(k)+": "+str(int(constraintm.slack)))
+        #         print(dvars[k])
 
-        constraintbb=model.getConstrByName("blackBelt")
-        print('Black Belt Districts: '+str(constraintbb.slack))
+        # constraintbb=model.getConstrByName("blackBelt")
+        # print('Black Belt Districts: '+str(constraintbb.slack))
     return {'master_solutions': sol_dict}, sol_tree
 
 def export_solutions(solutions, state_df, bdm, sol_tree, internal_nodes):
@@ -247,4 +248,4 @@ if __name__ == '__main__':
 #make google drive folder of maps. Sub folders for counties, compactness, w BB constraint
 
 #BB County FPs:
-['063', '013', '131', '119', '113', '109', '107', '105', '101', '091', '087', '085', '065', '047', '041', '023', '011', '005']
+#['063', '013', '131', '119', '113', '109', '107', '105', '101', '091', '087', '085', '065', '047', '041', '023', '011', '005']

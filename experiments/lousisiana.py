@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../gerrypy')
+sys.path.append('../gerrypy_julia')
 
 #from optimize.generate_mm import ColumnGenerator
 from optimize.generate import ColumnGenerator
@@ -38,12 +38,12 @@ class Experiment:
 
         print('Starting trial', base_config)
         cg = ColumnGenerator(base_config)
-        generation_start_t = time.time()
+        generation_start_t = time.thread_time()
         cg.generate()
-        generation_t = time.time() - generation_start_t
+        generation_t = time.thread_time() - generation_start_t
         analysis_start_t = time.time()
         #metrics = generation_metrics(cg)
-        analysis_t = time.time() - analysis_start_t
+        analysis_t = time.thread_time() - analysis_start_t
 
         trial_results = {
             'generation_time': generation_t,
@@ -53,7 +53,7 @@ class Experiment:
             #'metrics': metrics,
             'n_plans': number_of_districtings(cg.leaf_nodes, cg.internal_nodes)
         }
-
+        print(f"Tree generation time: {trial_results['generation_time']}")
         print(number_of_districtings(cg.leaf_nodes, cg.internal_nodes))
 
         def process(val):
@@ -74,7 +74,7 @@ class Experiment:
         bdm_df.to_csv(os.path.join(save_dir, csv_save_name), index=False)
         #district_df_of_tree_dir(save_dir)
 
-        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev='LA')
+        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev='LA', special_input=self.base_config['optimization_data'])
 
         maj_min=majority_minority(bdm, state_df)
         print(maj_min)
@@ -106,7 +106,9 @@ def master_solutions(bdm,leaf_nodes, internal_nodes, state_df, lengths, G, maj_m
     """
     #bdm = make_bdm(leaf_nodes) #TODO don't need to make the bdm twice
     #cost_coeffs = compactness_coefficients(bdm, state_df, lengths)
-    cost_coeffs = county_split_coefficients(bdm, state_df,G)
+    #cost_coeffs = county_split_coefficients(bdm, state_df,G)
+    cost_coeffs = compactness_coefficients(bdm, state_df, lengths)
+    bb = np.zeros((len(cost_coeffs)))
     cost_coeffs=np.array(cost_coeffs)
     root_map, ix_to_id = make_root_partition_to_leaf_map(leaf_nodes, internal_nodes)
     #print(root_map)
@@ -114,7 +116,7 @@ def master_solutions(bdm,leaf_nodes, internal_nodes, state_df, lengths, G, maj_m
 
     for partition_ix, leaf_slice in root_map.items():
         start_t = time.time()
-        model, dvars = make_master(base_config['n_districts'], bdm[:, leaf_slice], cost_coeffs[leaf_slice], maj_min[leaf_slice])
+        model, dvars = make_master(base_config['n_districts'], bdm[:, leaf_slice], cost_coeffs[leaf_slice], maj_min[leaf_slice], bb[leaf_slice])
         construction_t = time.time()
 
         model.Params.LogToConsole = 0
@@ -145,13 +147,13 @@ def master_solutions(bdm,leaf_nodes, internal_nodes, state_df, lengths, G, maj_m
         elif status==3:
             print("WARNING: no optimal solution is possible. Solving relaxation.")
 
-        constraintm_slacks=[]
-        for k in range(len(cost_coeffs)):
-            constraintm=model.getConstrByName('testm_%s' % k)
-            constraintm_slacks.append(constraintm.slack)
-            if constraintm.slack!=0:
-                print(str(k)+": "+str(int(constraintm.slack)))
-                print(dvars[k])
+        # constraintm_slacks=[]
+        # for k in range(len(cost_coeffs)):
+        #     constraintm=model.getConstrByName('testm_%s' % k)
+        #     constraintm_slacks.append(constraintm.slack)
+        #     if constraintm.slack!=0:
+        #         print(str(k)+": "+str(int(constraintm.slack)))
+        #         print(dvars[k])
     return {'master_solutions': sol_dict}, sol_tree
 
 def export_solutions(solutions, state_df, bdm, sol_tree, internal_nodes):
@@ -205,13 +207,13 @@ if __name__ == '__main__':
     tree_config = {
         'parent_resample_trials': 5, #TODO 5-10
         'max_sample_tries': 25,
-        'n_samples': 20, #TODO 10-20
+        'n_samples': 12, #TODO 10-20
         'n_root_samples': 1,
         'max_n_splits': 2,
         'min_n_splits': 2, 
         'max_split_population_difference': 1.5,
         'event_logging': False,
-        'verbose': True,
+        'verbose': False,
     }
     gurobi_config = {
         'IP_gap_tol': 1e-3,
@@ -223,6 +225,7 @@ if __name__ == '__main__':
         'population_tolerance': .01,
         'required_mm': 0, #TODO if this is 0, partition stage works
         #'population_tolerance': population_tolerance()*12,
+        'optimization_data': 'tract'
     }
     base_config = {**center_selection_config,
                    **tree_config,

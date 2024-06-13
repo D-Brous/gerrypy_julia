@@ -3,7 +3,7 @@ sys.path.append('../gerrypy')
 import numpy as np
 import pandas as pd
 from analyze.districts import vectorized_edge_cuts
-from data.data2020.load import load_opt_data
+from data.load import load_opt_data
 import networkx as nx
 from scipy import sparse
 import os

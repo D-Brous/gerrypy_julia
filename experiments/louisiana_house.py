@@ -12,7 +12,9 @@ import os
 import numpy as np
 import json
 from optimize.master import *
-from data.data2020.load import *
+#from data.data2020.load import *
+from gurobipy import GRB
+from data.load import *
 from optimize.improvement import *
 
 class Experiment:
@@ -34,16 +36,30 @@ class Experiment:
         name = 'la_house'
         experiment_dir = '%s_results_%s' % (name, str(int(time.time())))
         save_dir = os.path.join(constants.LOUISIANA_HOUSE_RESULTS_PATH, experiment_dir)
-        os.mkdir(save_dir)
+        os.mkdir(save_dir)  
 
-        print('Starting trial', base_config)
-        cg = ColumnGenerator(base_config)
-        generation_start_t = time.time()
-        cg.generate()
-        generation_t = time.time() - generation_start_t
+        print('Starting trial', self.base_config)
+        if self.base_config['debug_file'] is not None:
+            with open(os.path.join(save_dir, self.base_config['debug_file']), 'a') as debug_file:
+                self.base_config['debug_file'] = debug_file
+                cg = ColumnGenerator(self.base_config)
+                n_units = len(cg.state_df['GEOID'])
+                generation_start_t = time.thread_time()
+                cg.generate()
+                generation_t = time.thread_time() - generation_start_t
+                concluding_str = '\n-------------------------------------------\n'
+                concluding_str += f'Number of leaf nodes: {len(cg.leaf_nodes)}\n'
+                concluding_str += f'Number of nodes: {1+len(cg.internal_nodes)+len(cg.leaf_nodes)}'
+                self.base_config['debug_file'].write(concluding_str)
+        else:
+            cg = ColumnGenerator(self.base_config)
+            n_units = len(cg.state_df['GEOID'])
+            generation_start_t = time.thread_time()
+            cg.generate()
+            generation_t = time.thread_time() - generation_start_t
         analysis_start_t = time.time()
         #metrics = generation_metrics(cg)
-        analysis_t = time.time() - analysis_start_t
+        analysis_t = time.thread_time() - analysis_start_t
 
         trial_results = {
             'generation_time': generation_t,
@@ -53,8 +69,8 @@ class Experiment:
             #'metrics': metrics,
             'n_plans': number_of_districtings(cg.leaf_nodes, cg.internal_nodes)
         }
-
-        print(number_of_districtings(cg.leaf_nodes, cg.internal_nodes))
+        print(f"Tree generation time: {trial_results['generation_time']}")
+        print(f'Number of districtings = {number_of_districtings(cg.leaf_nodes, cg.internal_nodes)}')
 
         def process(val):
             if isinstance(val, dict):
@@ -64,27 +80,29 @@ class Experiment:
 
         save_name = '_'.join(['la_house', str(int(time.time()))]) + '.npy'
         csv_save_name = '_'.join(['la_house', str(int(time.time()))]) + '.csv'
-        print(type(trial_results))
+        #print(type(trial_results))
         np.save(os.path.join(save_dir, save_name), trial_results)
 
         #print(cg.internal_nodes)
 
-        bdm = make_bdm(cg.leaf_nodes)
+        bdm = make_bdm(cg.leaf_nodes, n_blocks=n_units)
+        #print(bdm[0, :]-bdm[0, :])
         bdm_df = pd.DataFrame(bdm)
         bdm_df.to_csv(os.path.join(save_dir, csv_save_name), index=False)
         #district_df_of_tree_dir(save_dir)
 
-        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev='LA')
+        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev='LA', special_input=self.base_config['optimization_data'])
 
-        maj_min=majority_minority(bdm, state_df)
-        print(maj_min)
-        print(sum(maj_min))
+        #maj_min=majority_minority(bdm, state_df)
+        #print(maj_min)
+        #print(sum(maj_min))
+        maj_min = np.zeros((len(bdm.T)))
 
         #county_split_coefficients(bdm,state_df,G)
 
-        solutions, sol_tree = master_solutions(bdm,cg.leaf_nodes, cg.internal_nodes, state_df, lengths,G, maj_min) 
-        print(solutions)
-        solutions_df = export_solutions(solutions, state_df, bdm, sol_tree, cg.internal_nodes)
+        sol_dict, sol_tree = master_solutions(bdm, cg.leaf_nodes, cg.internal_nodes, state_df, lengths,G, maj_min) 
+        #print(sol_dict)
+        solutions_df = export_solutions(sol_dict, state_df, bdm, sol_tree, cg.internal_nodes)
 
         results_save_name = '_'.join(['la_house', str(int(time.time()))]) + 'assignments.csv'
         solutions_df.to_csv(os.path.join(save_dir, results_save_name), index=False)
@@ -106,23 +124,38 @@ def master_solutions(bdm,leaf_nodes, internal_nodes, state_df, lengths, G, maj_m
     """
     #bdm = make_bdm(leaf_nodes) #TODO don't need to make the bdm twice
     #cost_coeffs = compactness_coefficients(bdm, state_df, lengths)
-    cost_coeffs = county_split_coefficients(bdm, state_df,G)
-    cost_coeffs=np.array(cost_coeffs)
+    #cost_coeffs = county_split_coefficients(bdm, state_df,G)
+    #cost_coeffs=np.array(cost_coeffs)
+    #cost_coeffs = compactness_coefficients(bdm, state_df, lengths)
+    cost_coeffs = majority_black(bdm, state_df)
+    bb = np.zeros((len(cost_coeffs)))
     root_map, ix_to_id = make_root_partition_to_leaf_map(leaf_nodes, internal_nodes)
     #print(root_map)
     sol_dict = {}
 
     for partition_ix, leaf_slice in root_map.items():
-        start_t = time.time()
-        model, dvars = make_master(base_config['n_districts'], bdm[:, leaf_slice], cost_coeffs[leaf_slice], maj_min[leaf_slice])
-        construction_t = time.time()
+        start_t = time.thread_time()
+        print(f"n_districts = {base_config['n_districts']}")
+        model, dvars = make_master(base_config['n_districts'], bdm[:, leaf_slice], cost_coeffs[leaf_slice], maj_min[leaf_slice], bb[leaf_slice])
+        construction_t = time.thread_time()
 
         model.Params.LogToConsole = 0
         model.Params.MIPGapAbs = 1e-4
         model.Params.TimeLimit = len(leaf_nodes) / 10
         model.optimize()
-        opt_cols = [j for j, v in dvars.items() if v.x > .5]
-        solve_t = time.time()
+        if model.status == GRB.INF_OR_UNBD:
+            print('model is infeasible or unbounded')
+            model.reset()
+            model.optimize()
+        if model.status == GRB.INFEASIBLE:
+            print('computing IIS')
+            model.computeIIS()
+            model.write('model.ilp')
+            print('done with IIS')
+        else:
+            print(model.status)
+        opt_cols = [j for j, v in dvars.items() if v.X > .5]
+        solve_t = time.thread_time()
 
         sol_dict[partition_ix] = {
             'construction_time': construction_t - start_t,
@@ -131,9 +164,9 @@ def master_solutions(bdm,leaf_nodes, internal_nodes, state_df, lengths, G, maj_m
             'solution_ixs': root_map[partition_ix][opt_cols],
             'optimal_objective': cost_coeffs[leaf_slice][opt_cols]
         }
-        print(opt_cols)
-        print(sol_dict[partition_ix]['solution_ixs'])
-        print(maj_min[sol_dict[partition_ix]['solution_ixs']])
+        #print(opt_cols)
+        #print(sol_dict[partition_ix]['solution_ixs'])
+        #print(maj_min[sol_dict[partition_ix]['solution_ixs']])
         #constraint = model.getConstrByName("majorityMinority")
         #print(constraint.slack)
 
@@ -145,16 +178,16 @@ def master_solutions(bdm,leaf_nodes, internal_nodes, state_df, lengths, G, maj_m
         elif status==3:
             print("WARNING: no optimal solution is possible. Solving relaxation.")
 
-        constraintm_slacks=[]
-        for k in range(len(cost_coeffs)):
-            constraintm=model.getConstrByName('testm_%s' % k)
-            constraintm_slacks.append(constraintm.slack)
-            if constraintm.slack!=0:
-                print(str(k)+": "+str(int(constraintm.slack)))
-                print(dvars[k])
-    return {'master_solutions': sol_dict}, sol_tree
+        # constraintm_slacks=[]
+        # for k in range(len(cost_coeffs)):
+        #     constraintm=model.getConstrByName('testm_%s' % k)
+        #     constraintm_slacks.append(constraintm.slack)
+        #     if constraintm.slack!=0:
+        #         print(str(k)+": "+str(int(constraintm.slack)))
+        #         print(dvars[k])
+    return sol_dict, sol_tree
 
-def export_solutions(solutions, state_df, bdm, sol_tree, internal_nodes):
+def export_solutions(sol_dict, state_df, bdm, sol_tree, internal_nodes):
     """
     Creates a dataframe with each block matched to a district based on the IP solution
     Args:
@@ -172,12 +205,12 @@ def export_solutions(solutions, state_df, bdm, sol_tree, internal_nodes):
 
     print('begin export solutions')
 
-    for sol_idx in range(len(solutions['master_solutions'])):
-        solution_ixs = solutions['master_solutions'][sol_idx]['solution_ixs']
-        for i in solution_ixs:
-            for index, j in enumerate(bdm.T[i]):
+    for sol_idx in range(len(sol_dict)):
+        solution_ixs = sol_dict[sol_idx]['solution_ixs']
+        for i in range(len(solution_ixs)):
+            for index, j in enumerate(bdm.T[solution_ixs[i]]):
                 if j==1: selected_dists[index]=i
-        print(selected_dists)
+        #print(selected_dists)
         col_title = 'District'+str(sol_idx)
         solutions_df[col_title] = selected_dists
 
@@ -203,15 +236,16 @@ if __name__ == '__main__':
         'capacity_weights': 'voronoi',
     }
     tree_config = {
-        'parent_resample_trials': 5, #TODO 5-10
-        'max_sample_tries': 25,
-        'n_samples': 20, #TODO 10-20
+        'parent_resample_trials': 5, #5 before #TODO 5-10
+        'max_sample_tries': 5, # 25 before
+        'n_samples': 2, #Should be 3-5 #TODO 10-20
         'n_root_samples': 1,
         'max_n_splits': 2,
         'min_n_splits': 2, 
         'max_split_population_difference': 1.5,
         'event_logging': False,
-        'verbose': True,
+        'verbose': False,
+        'debug_file': 'debug_file.txt'
     }
     gurobi_config = {
         'IP_gap_tol': 1e-3,
@@ -223,11 +257,13 @@ if __name__ == '__main__':
         'population_tolerance': .045,
         'required_mm': 0, #TODO if this is 0, partition stage works
         #'population_tolerance': population_tolerance()*12,
+        'optimization_data': 'block_group'
     }
     base_config = {**center_selection_config,
                    **tree_config,
                    **gurobi_config,
                    **pdp_config}
 
+    test()
     experiment = Experiment(base_config)
     experiment.run()
