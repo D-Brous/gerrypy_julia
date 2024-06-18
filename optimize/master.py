@@ -17,7 +17,7 @@ from analyze.districts import get_county_splits
 from scipy import sparse
 
 def make_master(k, block_district_matrix, costs,
-                 maj_min, bb, relax=False, opt_type='minimize'):
+                 maj_min, bb, relax=False, opt_type='minimize', callback_time_interval=60):
     """
     Constructs the master selection problem.
     Args:
@@ -32,9 +32,12 @@ def make_master(k, block_district_matrix, costs,
     """
 
     n_blocks, n_columns = block_district_matrix.shape
-    print(block_district_matrix.shape)
+    print(f'Current bdm shape is {block_district_matrix.shape}')
 
     master = Model("master LP")
+    if callback_time_interval is not None:
+        master._last_callback_time = -2 * callback_time_interval
+        master._callback_time_interval = callback_time_interval
 
     x = {}
     D = range(n_columns)
@@ -279,7 +282,7 @@ def majority_black(bdm, state_df):
         and 1 means it's not
 
     """
-    print("Begin maj black")
+    #print("Begin maj black")
     maj_black=[]
     p_blacks=[]
     #print(bdm.shape)
@@ -291,11 +294,11 @@ def majority_black(bdm, state_df):
         #print(dist_p_white)
         p_blacks.append(dist_p_black)
         if dist_p_black<0.5:
-            maj_black.append(0)
-        else:
             maj_black.append(1)
+        else:
+            maj_black.append(0)
     #print(p_whites)
-    print("End maj black")
+    #print("End maj black")
     return np.array(maj_black)
 
 def black_belt(bdm, state_df):
@@ -343,7 +346,7 @@ def get_solution_tree(leaf_nodes, internal_nodes, ix_to_id, solution_ixs): #TODO
             nodes_to_add.append(parent)
 
     #print(nodes_list)
-    print(id_list)
+    #print(id_list)
 
     return nodes_list
 

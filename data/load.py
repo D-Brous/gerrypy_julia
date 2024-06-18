@@ -120,7 +120,7 @@ def load_district_shapes(state_abbrev=None, year=2018):
         return gdf
 
 
-def load_opt_data(state_abbrev, special_input='', use_spt_matrix=False, opt_data_path=constants.OPT_DATA_PATH):
+def load_opt_data(state_abbrev, granularity, use_spt_matrix=False, opt_data_path=constants.OPT_DATA_PATH):
     """
     Args:
         state_abbrev: (str) two letter state abbreviation
@@ -131,7 +131,7 @@ def load_opt_data(state_abbrev, special_input='', use_spt_matrix=False, opt_data
     Returns: (pd.DataFrame, nx.Graph, np.array, dict) tuple of optimization
         data structures
     """
-    data_base_path = os.path.join(opt_data_path, special_input, state_abbrev)
+    data_base_path = os.path.join(opt_data_path, granularity, state_abbrev)
     adjacency_graph_path = os.path.join(data_base_path, 'G.p')
     state_df_path = os.path.join(data_base_path, 'state_df.csv')
 

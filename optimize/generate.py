@@ -9,7 +9,6 @@ import networkx as nx
 from collections import OrderedDict
 import constants as consts
 from analyze.districts import *
-#from data.data2020.load import load_opt_data
 from data.load import load_opt_data
 from optimize.center_selection import *
 from optimize.partition import *
@@ -74,13 +73,11 @@ class ColumnGenerator:
 
         """
         state_abbrev = config['state']
-        optimization_data_location = config.get('optimization_data', '')
         #print("")
         #if optimization_data_location=='':
         #    print("it's empty string")
         #print("")
-        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev=state_abbrev,
-                                                         special_input=optimization_data_location)
+        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev, config['granularity'])
         lengths /= 1000
 
         self.state_abbrev = state_abbrev
