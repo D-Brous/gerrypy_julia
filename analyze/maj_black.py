@@ -40,6 +40,6 @@ if __name__ == '__main__':
         dir_path = os.path.join(results_path, dir)
         if os.path.isdir(dir_path):
             for file in os.listdir(dir_path):
-                if file == 'assignments.csv':
+                if file[:11] == 'assignments' and file[-4:] == '.csv':
                     results_df_path = os.path.join(dir_path, file)
                     print(os.path.join(dir, file), majority_black(results_df_path, state_df_path, 105).sum(axis=1))

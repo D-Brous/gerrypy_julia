@@ -72,7 +72,7 @@ def load_acs(state_abbrev, year=None, county=False):
     return pd.read_csv(state_path, low_memory=False).sort_values('GEOID').reset_index(drop=True)
 
 
-def load_census_shapes(state_abbrev, year=None, custom_path='', granularity='tract'):
+def load_cgus(state_abbrev, year=None, custom_path='', granularity='tract'):
     """
     Args:
         state_abbrev: (str) two letter state abbreviation
@@ -81,19 +81,19 @@ def load_census_shapes(state_abbrev, year=None, custom_path='', granularity='tra
     Returns: (gpd.GeoDataFrame) of tract shapes
     """
     if custom_path:
-        census_shapes = gpd.read_file(os.path.join(custom_path, state_abbrev))
-        return census_shapes.sort_values(by='GEOID20').reset_index(drop=True)
+        cgus = gpd.read_file(os.path.join(custom_path, state_abbrev))
+        return cgus.sort_values(by='GEOID20').reset_index(drop=True)
     if not year:
         year = constants.ACS_BASE_YEAR
     shape_fname = state_abbrev + '_' + str(year)
-    census_shapes = gpd.read_file(os.path.join(constants.CENSUS_SHAPE_PATH,
+    cgus = gpd.read_file(os.path.join(constants.CENSUS_SHAPE_PATH,
                                               granularity,
                                               shape_fname))
-    census_shapes = census_shapes.to_crs("EPSG:3078")  # meters
-    #census_shapes = census_shapes[tract_shapes.ALAND > 0]
-    if 'GEOID10' in census_shapes.columns:
-        census_shapes.rename(columns={'GEOID10' : 'GEOID'}, inplace=True)
-    return census_shapes.sort_values(by='GEOID').reset_index(drop=True)
+    cgus = cgus.to_crs("EPSG:3078")  # meters
+    #cgus = cgus[tract_shapes.ALAND > 0]
+    if 'GEOID10' in cgus.columns:
+        cgus.rename(columns={'GEOID10' : 'GEOID'}, inplace=True)
+    return cgus.sort_values(by='GEOID').reset_index(drop=True)
 
 
 def load_adjacency_graph(state_abbrev):

@@ -29,16 +29,7 @@ class DefaultCostFunction:
         return {center: {index[bix]: cost for bix, cost in enumerate(costs[cix])}
                 for cix, center in enumerate(centers)}
 
-
-def flatten(container):
-    for i in container:
-        if isinstance(i, (list,tuple)):
-            for j in flatten(i):
-                yield j
-        else:
-            yield i
-
-def flatten2(lis_of_lis):
+def flatten(lis_of_lis):
     return [element for lis in lis_of_lis for element in lis]
 
 class ColumnGenerator:
@@ -130,7 +121,7 @@ class ColumnGenerator:
                                   for child in partition]
             indirect_descendants = [get_descendents(child) for child in direct_descendents
                                     if (child in sample_internal_nodes)]
-            return direct_descendents + flatten2(indirect_descendants)
+            return direct_descendents + flatten(indirect_descendants)
         if problem_node.id == 0:
             raise RuntimeError('Root partition failed')
         if problem_node.parent_id == 0:

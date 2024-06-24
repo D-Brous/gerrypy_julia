@@ -17,7 +17,7 @@ from analyze.districts import get_county_splits
 from scipy import sparse
 
 def make_master(k, block_district_matrix, costs,
-                 maj_min, bb, relax=False, opt_type='minimize', callback_time_interval=60):
+                 maj_min, bb, relax=False, opt_type='minimize', callback_time_interval=60, included_districts=None):
     """
     Constructs the master selection problem.
     Args:
@@ -41,9 +41,12 @@ def make_master(k, block_district_matrix, costs,
 
     x = {}
     D = range(n_columns)
-    vtype = GRB.CONTINUOUS if relax else GRB.BINARY
-    for j in D:
-        x[j] = master.addVar(vtype=vtype, name="x(%s)" % j)
+    if relax:
+        for j in D:
+            x[j] = master.addVar(vtype=GRB.CONTINUOUS, ub=1.0, name="x(%s)" % j)
+    else:
+        for j in D:
+            x[j] = master.addVar(vtype=GRB.BINARY, name="x(%s)" % j)
 
     #Create binary variables to track if nbhd k is in center i
     #for i in districts:
@@ -59,6 +62,10 @@ def make_master(k, block_district_matrix, costs,
     master.addConstr(quicksum(x[j] for j in D) == k,
                      name="totalDistricts")
     
+    master.addConstr(quicksum(costs[j] * x[j] for j in D) <= k - 20)
+    #if included_districts is not None:
+    #    master.addConstrs((x[j] == 1 for j in range(n_columns) if included_districts[j] == 1), name='warmStart')
+    
     # #at least 2 majority minority districts
     # master.addConstr(quicksum(maj_min[j] * x[j] for j in D)>=2, name="majorityMinority") #TODO 2
 
@@ -70,7 +77,7 @@ def make_master(k, block_district_matrix, costs,
     #                       name='testm_%s' % k)
 
     if opt_type == 'minimize':
-        master.setObjective(quicksum(costs[j] * x[j] + 10000*bb[j] * x[j] for j in D), GRB.MINIMIZE)
+        master.setObjective(quicksum(costs[j] * x[j] for j in D), GRB.MINIMIZE)
     elif opt_type == 'maximize':
         master.setObjective(quicksum(costs[j] * x[j] for j in D), GRB.MAXIMIZE)
     elif opt_type == 'abs_val':
@@ -373,8 +380,8 @@ def make_root_partition_to_leaf_map(leaf_nodes, internal_nodes):
     # Create mapping from leaf ix to root partition ix
     node_to_root_partition = {}
     node_dict = {**internal_nodes, **leaf_nodes}
-    id_to_ix = {node_id: node_ix for node_ix, node_id in enumerate(sorted(leaf_nodes))}
-    ix_to_id= {node_ix: node_id for node_ix, node_id in enumerate(sorted(leaf_nodes))}
+    id_to_ix = {node_id: node_ix for node_ix, node_id in enumerate(leaf_nodes)}
+    ix_to_id= {node_ix: node_id for node_ix, node_id in enumerate(leaf_nodes)}
     root = internal_nodes[0]
     for root_partition_ix, root_partition in enumerate(root.children_ids):
         for child_id in root_partition:

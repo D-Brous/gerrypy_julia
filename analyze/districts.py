@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../gerrypy')
+sys.path.append('../gerrypy_julia')
 
 import pandas as pd
 import numpy as np
@@ -56,7 +56,7 @@ def make_bdm(leaf_nodes, n_blocks=None):
                  key=lambda x: x.id)]
     if n_blocks is None:
         n_blocks = max([max(d) for d in districts]) + 1
-    block_district_matrix = np.zeros((n_blocks, len(districts)))
+    block_district_matrix = np.zeros((n_blocks, len(districts)), dtype=bool)
     for ix, d in enumerate(districts):
         block_district_matrix[d, ix] = 1
     return block_district_matrix

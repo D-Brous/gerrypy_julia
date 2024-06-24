@@ -43,12 +43,12 @@ def preprocess_tracts(state_abbrev, opt_data_path=constants.OPT_DATA_PATH, year=
         state_abbrev: (str) two letter state abbreviation
     """
 
-    census_shapes = load_census_shapes(state_abbrev, year=year, granularity=granularity)
+    cgus = load_cgus(state_abbrev, year=year, granularity=granularity)
     state_df = pd.DataFrame({
-        'x': census_shapes.centroid.x,
-        'y': census_shapes.centroid.y,
-        'area': census_shapes.area / 1000**2,  # sq km
-        'GEOID': census_shapes.GEOID.apply(lambda x: str(x).zfill(11)),
+        'x': cgus.centroid.x,
+        'y': cgus.centroid.y,
+        'area': cgus.area / 1000**2,  # sq km
+        'GEOID': cgus.GEOID.apply(lambda x: str(x).zfill(11)),
     })
 
     # Join location data with demographic data
