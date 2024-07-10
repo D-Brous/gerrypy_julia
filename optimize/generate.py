@@ -74,10 +74,12 @@ class ColumnGenerator:
         self.state_abbrev = state_abbrev
 
         ideal_pop = state_df['population'].values.sum() / config['n_districts']
+        ideal_vap = state_df['VAP'].values.sum() / config['n_districts']
         max_pop_variation = ideal_pop * config['population_tolerance']
 
         config['max_pop_variation'] = max_pop_variation
         config['ideal_pop'] = ideal_pop
+        config['ideal_vap'] = ideal_vap
 
         self.config = config
         self.G = G
@@ -89,12 +91,17 @@ class ColumnGenerator:
         self.internal_nodes = {}
         self.leaf_nodes = {}
         self.max_id = 0
-        self.root = None
+        self.root = SHPNode(self.config['n_districts'],
+                       list(self.state_df.index),
+                       0, is_root=True)
+        self.internal_nodes[self.root.id] = self.root
+        #this root is the entire state_df
 
         self.failed_regions = []
         self.failed_root_samples = 0
-        self.n_infeasible_partitions = 0
-        self.n_successful_partitions = 0
+        self.n_infeasible_partitions = np.zeros((self.config['n_root_samples']), dtype=int)
+        self.n_successful_partitions = np.zeros((self.config['n_root_samples']), dtype=int)
+        self.n_deleted_nodes = np.zeros((self.config['n_root_samples']), dtype=int)
 
         self.event_list = []
 
@@ -105,8 +112,19 @@ class ColumnGenerator:
                 tracts, config.get('county_discount_factor', 0.5))
 
         self.cost_fn = DefaultCostFunction(lengths)
+        self.maj_black_partition_IPs = {
+            'make_partition_IP_MajBlack': make_partition_IP_MajBlack,
+            'make_partition_IP_MajBlack_explicit': make_partition_IP_MajBlack_explicit,
+            'make_partition_IP_MajBlack_approximate': make_partition_IP_MajBlack_approximate
+        }
         #random.seed(0)
         #np.random.seed(0)
+
+        self.current_root_sample = 0
+        self.debug = False
+        if self.config['debug_file'] is not None:
+            self.debug = True
+            self.config['debug_file'].write(f'Logged root node 0 at time {time.thread_time()}\n')
 
     def _assign_id(self):
         self.max_id += 1
@@ -144,15 +162,19 @@ class ColumnGenerator:
                 for child_id in get_descendents(node_id):
                     nodes_to_delete.add(child_id)
 
+        n_deleted_nodes = 0
         for node_id in nodes_to_delete:
             if node_id in sample_leaf_nodes:
                 if debug:
                     self.config['debug_file'].write(f'{node_id}, ')
                 del sample_leaf_nodes[node_id]
+                n_deleted_nodes += 1
             elif node_id in sample_internal_nodes:
                 if debug:
                     self.config['debug_file'].write(f'{node_id}, ')
                 del sample_internal_nodes[node_id]
+                n_deleted_nodes += 1
+        self.n_deleted_nodes[self.current_root_sample] += n_deleted_nodes
 
         parent.delete_branch(branch_ix)
         self.sample_queue = [parent] + [n for n in self.sample_queue if n.id not in nodes_to_delete]
@@ -160,49 +182,36 @@ class ColumnGenerator:
             print(f'Pruned branch from {parent.id} with {len(nodes_to_delete)}'
                   f' deleted descendents.')
 
-    def generate(self):
+    def generate_root_sample(self):
         """
         Main method for running the generation process.
 
         Returns: None
 
         """
-        completed_root_samples = 0
-        n_root_samples = self.config['n_root_samples']
-
-        root = SHPNode(self.config['n_districts'],
-                       list(self.state_df.index),
-                       0, is_root=True)
-        self.root = root
-        self.internal_nodes[root.id] = root
-        #this root is the entire state_df
-
-        debug = False
-        if self.config['debug_file'] is not None:
-            debug = True
-            self.config['debug_file'].write(f'Logged root node 0 at time {time.thread_time()}\n')
-
-        while completed_root_samples < n_root_samples:
+        sample_incomplete = True
+        sample_leaf_nodes = {}
+        sample_internal_nodes = {}
+        print('\n----------------Generating root sample number %d------------------\n' % self.current_root_sample)
+        while sample_incomplete:
             # For each root partition, we attempt to populate the sample tree
             # If failure in particular root, prune all work from that root
             # partition. If successful, commit subtree to whole tree.
-            self.sample_queue = [root]
-            sample_leaf_nodes = {}
-            sample_internal_nodes = {}
+            self.sample_queue = [self.root]
             try:
-                print('Root sample number', completed_root_samples)
+                
                 while len(self.sample_queue) > 0:
                     #node = self.sample_queue.pop() #DFS
                     node = self.sample_queue.pop(0) #BFS
-                    child_samples = self.sample_node(node, debug)
+                    child_samples = self.sample_node(node, self.debug)
                     if len(child_samples) == 0:  # Failure detected
                         self.failed_regions.append(node.area)
                         # Try to correct failure
                         
-                        if debug:
+                        if self.debug:
                             self.config['debug_file'].write(f'Failed split of node {node.id}.\n    Deleted nodes:\n    [')
-                        self.retry_sample(node, sample_internal_nodes, sample_leaf_nodes, debug=debug)
-                        if debug:
+                        self.retry_sample(node, sample_internal_nodes, sample_leaf_nodes, debug=self.debug)
+                        if self.debug:
                             #num_deleted_nodes = num_completed_samples - len(sample_internal_nodes)
                             #self.config['debug_file'].write(f'Failed split: {num_deleted_nodes} nodes deleted. Remaining sample queue:\n[')
                             self.config['debug_file'].write(f']\n    Remaining sample queue:\n    [')
@@ -215,28 +224,30 @@ class ColumnGenerator:
                     for child in child_samples:
                         if child.n_districts == 1:
                             sample_leaf_nodes[child.id] = child
-                            if debug:
+                            if self.debug:
                                 self.config['debug_file'].write(f'Logged leaf node {child.id} at time {time.thread_time()}\n')
                         else:
                             self.sample_queue.append(child)
                             #if debug:
                             #    self.config['debug_file'].write(f'{child.id}, internal, {child.n_districts}, {len(child.area)}, {time.thread_time()}\n')
-                    if not node.is_root:
-                        sample_internal_nodes[node.id] = node
-                        if debug:
-                            self.config['debug_file'].write(f'Logged internal node {node.id} at time {time.thread_time()}\n')
+                    sample_internal_nodes[node.id] = node
+                    if self.debug:
+                        self.config['debug_file'].write(f'Logged internal node {node.id} at time {time.thread_time()}\n')
+                del sample_internal_nodes[0]
                 self.internal_nodes.update(sample_internal_nodes)
                 self.leaf_nodes.update(sample_leaf_nodes)
-                completed_root_samples += 1
+                self.current_root_sample += 1
+                sample_incomplete = False
             except RuntimeError as error:  # Stop trying on root partition
                 print(f'Root sample failed: {str(error)}')
-                if debug:
-                    self.config['debug_file'].write('\n-------------------------------Root sample failed-------------------------------\n')
+                if self.debug:
+                    self.config['debug_file'].write(f'\n-------------------------------Root sample failed------------------------------- (last node: {node.id})\n')
                 self.root.children_ids = self.root.children_ids[:-1]
                 self.root.partition_times = self.root.partition_times[:-1]
                 self.failed_root_samples += 1
+        return sample_internal_nodes, sample_leaf_nodes
 
-    def sample_node(self, node, debug=False):
+    def sample_node(self, node, debug):
         """
         Generate children partitions of a region contained by [node].
 
@@ -256,19 +267,16 @@ class ColumnGenerator:
         while len(samples) < n_samples and n_trials < self.config['max_sample_tries']:
             partition_start_t = time.time()
             child_nodes = self.make_partition(area_df, node) 
-            #print(child_nodes)
             partition_end_t = time.time()
             if child_nodes:
-                self.n_successful_partitions += 1
+                self.n_successful_partitions[self.current_root_sample] += 1
                 samples.append(child_nodes)
                 node.children_ids.append([child.id for child in child_nodes])
                 node.partition_times.append(partition_end_t - partition_start_t)
             else:
-                self.n_infeasible_partitions += 1
+                self.n_infeasible_partitions[self.current_root_sample] += 1
                 node.n_infeasible_samples += 1
             n_trials += 1
-        #if len(node.partition_times) > 0:
-        #    print(sum(node.partition_times)/len(node.partition_times))
         children = [node for sample in samples for node in sample]
         if debug:
             self.config['debug_file'].write(f'Split node {node.id} with {n_trials} trials in {time.thread_time()-initial_time} sec. Children are:\n')
@@ -321,10 +329,33 @@ class ColumnGenerator:
                                              area_df.population.to_dict(),
                                              pop_bounds, counties, split_lim, nonwhite_per_block)
         """
-        partition_IP, xs = make_partition_IP(costs, 
-                                                          connectivity_sets, 
-                                                          area_df['population'].to_dict(),
-                                                          pop_bounds)
+        if self.config['exact_partition_range'] is not None and node.n_districts in self.config['exact_partition_range']:
+            partition_IP_func = self.maj_black_partition_IPs[self.config['maj_black_partition_IP']]
+            if self.config['maj_black_partition_IP'] == 'make_partition_IP_MajBlack_approximate':
+                distr_vaps = {}
+                for center, n_child_districts in children_centers.items():
+                    distr_vaps[center] = self.config['ideal_vap'] * n_child_districts
+                partition_IP, xs = partition_IP_func(costs,
+                                                    connectivity_sets,
+                                                    area_df['population'].to_dict(),
+                                                    area_df['BVAP'].to_dict(),
+                                                    pop_bounds,
+                                                    distr_vaps,
+                                                    self.config['alpha'],
+                                                    self.config['epsilon'])
+            else:
+                partition_IP, xs = partition_IP_func(costs,
+                                                    connectivity_sets,
+                                                    area_df['population'].to_dict(),
+                                                    area_df['BVAP'].to_dict(),
+                                                    area_df['VAP'].to_dict(),
+                                                    pop_bounds,
+                                                    self.config['alpha'])
+        else:
+            partition_IP, xs = make_partition_IP(costs, 
+                                                 connectivity_sets, 
+                                                 area_df['population'].to_dict(),
+                                                 pop_bounds)
         
         #partition_IP, xs, = make_partition_IP(costs,
         #                                     connectivity_sets,
@@ -337,8 +368,9 @@ class ColumnGenerator:
         partition_IP.Params.MIPGap = self.config['IP_gap_tol']
         partition_IP.update()
         partition_IP.optimize()
+        districts = xs['districts']
         try:
-            districting = {i: [j for j in xs[i] if xs[i][j].X > .5]
+            districting = {i: [j for j in districts[i] if districts[i][j].X > .5]
                            for i in children_centers}
             #bins = {i: [k for k in BinCounts[i] if BinCounts[i][k].X > .5]
             #               for i in children_centers}

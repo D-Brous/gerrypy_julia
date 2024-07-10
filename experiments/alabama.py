@@ -70,7 +70,7 @@ class Experiment:
 
         #print(cg.internal_nodes)
 
-        bdm = make_bdm(cg.leaf_nodes)
+        bdm = make_cdm(cg.leaf_nodes)
         bdm_df = pd.DataFrame(bdm)
         bdm_df.to_csv(os.path.join(save_dir, csv_save_name), index=False)
         #district_df_of_tree_dir(save_dir)

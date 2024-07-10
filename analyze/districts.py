@@ -42,7 +42,7 @@ def svd_entropy(sigma):
     return entropy / (math.log(len(sigma)) / math.log(math.e))
 
 
-def make_bdm(leaf_nodes, n_blocks=None):
+def make_cdm(leaf_nodes, n_cgus=None):
     """
     Generate the block district matrix given by a sample trees leaf nodes.
     Args:
@@ -54,12 +54,12 @@ def make_bdm(leaf_nodes, n_blocks=None):
     """
     districts = [d.area for d in sorted(leaf_nodes.values(),
                  key=lambda x: x.id)]
-    if n_blocks is None:
-        n_blocks = max([max(d) for d in districts]) + 1
-    block_district_matrix = np.zeros((n_blocks, len(districts)), dtype=bool)
+    if n_cgus is None:
+        n_cgus = max([max(d) for d in districts]) + 1
+    cgu_district_matrix = np.zeros((n_cgus, len(districts)), dtype=bool)
     for ix, d in enumerate(districts):
-        block_district_matrix[d, ix] = 1
-    return block_district_matrix
+        cgu_district_matrix[d, ix] = 1
+    return cgu_district_matrix
 
 
 def bdm_metrics(block_district_matrix, k):
@@ -118,8 +118,8 @@ def generation_metrics(cg, low_memory=False):
     districts = [d.area for d in cg.leaf_nodes.values()]
     duplicates = len(districts) - len(set([frozenset(d) for d in districts]))
 
-    block_district_matrix = make_bdm(cg.leaf_nodes)
-    district_df = create_district_df(cg.config['state'], block_district_matrix)
+    cdm = make_cdm(cg.leaf_nodes)
+    district_df = create_district_df(cg.config['state'], cdm)
 
     edge_cuts = district_df.edge_cuts.values
     min_compactness, _ = query_tree(cg.leaf_nodes, cg.internal_nodes, edge_cuts)
@@ -145,7 +145,7 @@ def generation_metrics(cg, low_memory=False):
     if low_memory:
         return metrics
     else:
-        return {**metrics, **bdm_metrics(block_district_matrix, cg.config['n_districts'])}
+        return {**metrics, **bdm_metrics(cdm, cg.config['n_districts'])}
 
 
 def roeck_compactness(districts, state_df, lengths):
@@ -431,8 +431,8 @@ def metric_zscore(metric, leaf_nodes, internal_nodes):
 def create_objective_df(state, leaf_nodes, internal_nodes, fixed_std=None):
     state_df, G, _, _ = load_opt_data(state)
 
-    bdm = make_bdm(leaf_nodes, len(state_df))
-    ddf = create_district_df(state, bdm)
+    cdm = make_cdm(leaf_nodes, len(state_df))
+    ddf = create_district_df(state, cdm)
 
     vs_mean = ddf['mean'].values
     vs_std_dev = ddf['std_dev'].values if fixed_std is None else fixed_std
@@ -446,12 +446,12 @@ def create_objective_df(state, leaf_nodes, internal_nodes, fixed_std=None):
     efficiency_gap_coeffs = (ess - .5) - 2 * (average_voteshare - .5)
 
     shapes = load_tract_shapes(state)
-    pp_scores, perimeters = vectorized_polsby_popper(bdm, G, shapes)
+    pp_scores, perimeters = vectorized_polsby_popper(cdm, G, shapes)
 
     bbm = make_block_boundary_matrix(shapes)#.rename(columns={'COUNTYFP20': 'COUNTYFP'}))
-    n_splits = splits(bdm, bbm)
-    n_pieces = pieces(bdm, bbm)
-    entropy = boundary_entropy(bdm, bbm, state_df.population.values)
+    n_splits = splits(cdm, bbm)
+    n_pieces = pieces(cdm, bbm)
+    entropy = boundary_entropy(cdm, bbm, state_df.population.values)
 
     raw_metric_dict = {
         'ess': ess,

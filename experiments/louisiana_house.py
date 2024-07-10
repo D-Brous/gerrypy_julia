@@ -36,18 +36,10 @@ def save_object(obj, filepath):
     with open(filepath, 'wb') as outp:  # Overwrites any existing file.
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
 
-def load_object(filepath):
-    with open(filepath, 'rb') as inp:
-        obj = pickle.load(inp)
-    return obj
-
 def save_matrix(mtx, filepath):
     sparse_mtx = sp.sparse.csc_matrix(mtx)
     sp.sparse.save_npz(filepath, sparse_mtx)
 
-def load_matrix(filepath):
-    sparse_mtx = sp.sparse.load_npz(filepath)
-    return sparse_mtx.toarray()
 
 class Experiment:
     """
@@ -84,115 +76,146 @@ class Experiment:
 
         """
         self.config = config
-        self.master_args = None
+        self.state_df = load_state_df(config['state'], config['granularity'])
+        self.save_dir = self.get_save_dir()
+        self.assignments_file = 'assignments_%s.csv' % str(int(time.time()))
+        self.n_cgus = len(self.state_df['GEOID'])
+        self.solutions_df = pd.DataFrame()
+        self.solutions_df['GEOID'] = self.state_df['GEOID']
     
     def run(self):
-        if self.config['mode'] == 'partition':
-            self.partition_problem()
+        if self.config['mode'] == 'partition' or self.config['mode'] == 'both':
+            os.mkdir(self.save_dir)
+            if self.config['save_tree']:
+                os.mkdir(os.path.join(self.save_dir, 'tree'))
+            if self.config['save_cdms']:
+                os.mkdir(os.path.join(self.save_dir, 'cdms'))
+            self.shp()
         elif self.config['mode'] == 'master':
+            self.save_dir = self.get_save_dir(time_str=self.config['tree_time_str'])
             self.master_solutions()
-        elif self.config['mode'] == 'both':
-            self.partition_problem()
-            self.master_solutions(args=self.master_args)
         else:
             raise ValueError('mode value is invalid')
     
-    def get_save_dir(self, time_str=None):
+    def get_save_dir(self, time_str=str(int(time.time()))):
         """
         If time_str=None, creates directory save_dir and returns it, and otherwise
         assembles it using time_str
         Args:
             time_str: (str or None) time string of desired save directory
         """
-        if time_str is None:
-            experiment_dir = 'results_%s' % str(int(time.time()))
-            save_dir = os.path.join(self.config['results_dir'], experiment_dir)
-            os.mkdir(save_dir)
-        else:
-            experiment_dir = 'results_%s' % time_str
-            save_dir = os.path.join(self.config['results_dir'], experiment_dir)
-        return save_dir
+        return os.path.join(self.config['results_dir'], 'results_%s' % time_str)
     
-    def partition_problem(self):
+    def shp(self):
         """Performs all generation trials.
 
         Saves a file with the tree as well as a large number of ensemble level metrics."""
-        save_dir = self.get_save_dir()
-
-        with open(os.path.join(save_dir, 'config.json'), 'w') as file:
+        with open(os.path.join(self.save_dir, 'config.json'), 'w') as file:
             json.dump(self.config, file, indent=0)
         
-        print('\n-------------Starting tree generation-------------\n')
+        print('\n<><><><><><><><><><><> SHP Algorithm Start <><><><><><><><><><><>\n')
         if self.config['debug_file'] is not None:
-            with open(os.path.join(save_dir, self.config['debug_file']), 'a') as debug_file:
-                self.config['debug_file'] = debug_file
-                cg = ColumnGenerator(self.config)
-                generation_start_t = time.thread_time()
-                cg.generate()
-                generation_t = time.thread_time() - generation_start_t
-                concluding_str = '\n-------------------------------------------\n'
-                concluding_str += f'Number of leaf nodes: {len(cg.leaf_nodes)}\n'
-                concluding_str += f'Number of nodes: {1+len(cg.internal_nodes)+len(cg.leaf_nodes)}'
-                self.config['debug_file'].write(concluding_str)
-        else:
-            cg = ColumnGenerator(self.config)
+            self.config['debug_file'] = open(os.path.join(self.save_dir, self.config['debug_file']), 'a')
+        cg = ColumnGenerator(self.config)
+        generation_times = np.zeros((self.config['n_root_samples']))
+        master_times = np.zeros((self.config['n_root_samples']))
+        cdms = {}
+        for root_partition_ix in range(self.config['n_root_samples']):
             generation_start_t = time.thread_time()
-            cg.generate()
-            generation_t = time.thread_time() - generation_start_t
-        #analysis_start_t = time.time()
-        #metrics = generation_metrics(cg)
-        #analysis_t = time.thread_time() - analysis_start_t
-        print(f"\nTree generation time: {generation_t}")
-        print(f'Number of districtings = {number_of_districtings(cg.leaf_nodes, cg.internal_nodes)}')
-
-        self.master_args = {}
-        self.master_args['tree'] = (cg.internal_nodes, cg.leaf_nodes)
+            sample_internal_nodes, sample_leaf_nodes = cg.generate_root_sample()
+            generation_times[root_partition_ix] = time.thread_time() - generation_start_t
+            print(f'Generation time: {generation_times[root_partition_ix]}')
+            print(f'Number of deleted nodes: {cg.n_deleted_nodes[root_partition_ix]}')
+            print(f'Number of infeasible partitions: {cg.n_infeasible_partitions[root_partition_ix]}')
+            print(f'Number of successful partitions: {cg.n_successful_partitions[root_partition_ix]}')
+            if self.config['save_tree']:
+                save_object((sample_internal_nodes, sample_leaf_nodes), os.path.join(self.save_dir, f'tree/root_sample_{root_partition_ix}.pkl'))
+            cdm = make_cdm(sample_leaf_nodes, n_cgus=self.n_cgus)
+            cdms[root_partition_ix] = cdm
+            if self.config['save_cdms']:
+                save_matrix(cdm, os.path.join(self.save_dir, f'cdms/cdm_{root_partition_ix}.npz'))
+            if self.config['mode'] == 'both':
+                master_start_t = time.thread_time()
+                root_partition = cg.root.children_ids[-1]
+                col_title = 'District'+str(root_partition_ix)
+                self.solutions_df[col_title] = self.get_solution_dp(cg.root, 
+                                                                    sample_internal_nodes, 
+                                                                    sample_leaf_nodes, 
+                                                                    cdm, 
+                                                                    root_partition_ix, 
+                                                                    root_partition)
+                self.solutions_df.to_csv(os.path.join(self.save_dir, self.assignments_file), index=False)
+                master_times[root_partition_ix] = time.thread_time() - master_start_t
+                print(f'Master solutions time: {master_times[root_partition_ix]}')
         if self.config['save_tree']:
-            save_object(self.master_args['tree'], os.path.join(save_dir, 'tree.pkl'))
-        state_df, G, lengths, edge_dists = load_opt_data(self.config['state'], self.config['granularity'])
-        self.master_args['state_df'] = state_df
-        n_census_shapes = len(state_df['GEOID'])
-        self.master_args['bdm'] = make_bdm(cg.leaf_nodes, n_blocks=n_census_shapes)
-        if self.config['save_bdm']:
-            save_matrix(self.master_args['bdm'], os.path.join(save_dir, 'bdm.npz'))
-        self.master_args['save_dir'] = save_dir
-
-    def master_solutions(self, args=None):
-        if args is None:
-            save_dir = self.get_save_dir(time_str=self.config['tree_time_str'])
-            try:
-                tree = load_object(os.path.join(save_dir, 'tree.pkl'))
-            except:
-                raise FileExistsError('tree_time_str is invalid')
-            state_df, G, lengths, edge_dists = load_opt_data(self.config['state'], self.config['granularity'])
-            n_census_shapes = len(state_df['GEOID'])
-            bdm = make_bdm(tree[1], n_blocks=n_census_shapes)
-        else:
-            tree = args['tree']
-            bdm = args['bdm']
-            state_df = args['state_df']
-            save_dir = args['save_dir']
+            save_object(cg.root, os.path.join(self.save_dir, f'tree/root.pkl'))
+        if self.config['debug_file'] is not None:
+            concluding_str = '\n-------------------------------------------\n'
+            concluding_str += f'Number of leaf nodes: {len(cg.leaf_nodes)}\n'
+            concluding_str += f'Number of nodes: {1+len(cg.internal_nodes)+len(cg.leaf_nodes)}'
+            self.config['debug_file'].write(concluding_str)
+            self.config['debug_file'].close()
+        print('\n<><><><><><><><><><><> SHP Algorithm End <><><><><><><><><><><>\n')
         
-        print('\n-------------Starting master solutions-------------\n')
-        time_init = time.time()
-        internal_nodes = tree[0]
-        leaf_nodes = tree[1]
+        print(f'Number of leaf_nodes: {len(cg.leaf_nodes)}')
+        print(f'Number of nodes: {1+len(cg.internal_nodes)+len(cg.leaf_nodes)}\n')
+        print(f'Tree generation times: {generation_times.astype("int32")}')
+        print(f'--> Total generation time: {np.sum(generation_times):0.2f}\n')
+        print(f'Master solutions times: {np.round(master_times, 2)}')
+        print(f'--> Total master solutions time: {np.sum(master_times):0.2f}\n')
+        print(f'Number of districtings = {number_of_districtings(cg.leaf_nodes, cg.internal_nodes)}')
+        print(f'Numbers of deleted nodes: {cg.n_deleted_nodes}')
+        print(f'Numbers of infeasible partitions: {cg.n_infeasible_partitions}')
+        print(f'Numbers of successful partitions: {cg.n_successful_partitions}\n')
+    
+    def master_solutions(self):
+        try:
+            tree = load_tree(self.save_dir)
+            root = tree[-1]
+        except:
+            raise FileExistsError('tree_time_str is invalid or given directory has no tree files')
+        try:
+            cdms = load_cdms(self.save_dir)
+        except:
+            cdms = {}
+            for root_partition_ix in range(self.config['n_root_samples']):
+                cdms[root_partition_ix] = make_cdm(tree[root_partition_ix][1], n_cgus=self.n_cgus)
+        master_times = np.zeros((self.config['n_root_samples']))
+        print(len(root.children_ids))
+        for root_partition_ix, root_partition in enumerate(root.children_ids):
+            master_start_t = time.thread_time()
+            col_title = 'District'+str(root_partition_ix)
+            self.solutions_df[col_title] = self.get_solution_dp(root, 
+                                                                tree[root_partition_ix][0], 
+                                                                tree[root_partition_ix][1], 
+                                                                cdms[root_partition_ix], 
+                                                                root_partition_ix, 
+                                                                root_partition)
+            self.solutions_df.to_csv(os.path.join(self.save_dir, self.assignments_file), index=False)
+            master_times[root_partition_ix] = time.thread_time() - master_start_t
+        print(f'Master solutions times: {np.round(master_times, 2)}')
+        print(f'Total master solutions time: {np.sum(master_times):0.2f}')
+        
+    
+    def get_solution_dp(self, root, internal_nodes, leaf_nodes, cdm, root_partition_ix, root_partition):
+        print('\n-------------Solving master for root sample number %d-------------\n' % root_partition_ix)
         nodes = {**internal_nodes, **leaf_nodes}
-        queue = []
-        parent_layer = [internal_nodes[0]]
-        children_layer = [internal_nodes[id] for partition in internal_nodes[0].children_ids for id in partition if nodes[id].n_districts != 1]
+        dp_queue = []
+        parent_layer = [root]
+        children_layer = [internal_nodes[id] for id in root_partition if nodes[id].n_districts != 1]
+        #children_layer = [internal_nodes[id] for partition in root.children_ids for id in partition if nodes[id].n_districts != 1]
         while len(children_layer) > 0:
-            queue += children_layer
+            dp_queue += children_layer
             parent_layer = children_layer
             children_layer = [nodes[id] for node in parent_layer for partition in node.children_ids for id in partition if nodes[id].n_districts != 1]
         
         for node in leaf_nodes.values():
-            total_bvap = sum(state_df.loc[index, 'BVAP'] for index in node.area)
-            total_vap = sum(state_df.loc[index, 'VAP'] for index in node.area)
+            total_bvap = sum(self.state_df.loc[index, 'BVAP'] for index in node.area)
+            total_vap = sum(self.state_df.loc[index, 'VAP'] for index in node.area)
             node.best_subtree = ([node.id], total_bvap / total_vap > 0.5)
         
-        for i in range(len(queue)-1, -1, -1):
-            current_node = queue[i]
+        for i in range(len(dp_queue)-1, -1, -1):
+            current_node = dp_queue[i]
             best_subtree_ids = []
             best_subtree_score = -1 
             for partition in current_node.children_ids:
@@ -202,19 +225,12 @@ class Experiment:
                     best_subtree_score = sample_score
             current_node.best_subtree = (best_subtree_ids, best_subtree_score)
         
-        sol_dict = {}
         id_to_ix = {node_id: node_ix for node_ix, node_id in enumerate(leaf_nodes)}
-        for partition_ix, partition in enumerate(internal_nodes[0].children_ids):
-            sol_dict[partition_ix] = {
-                'solution_ixs': [id_to_ix[subtree_id] for node_id in partition for subtree_id in nodes[node_id].best_subtree[0]],
-                'optimal_objective': sum(nodes[node_id].best_subtree[1] for node_id in partition)
-            }
-        sol_tree = []
-        print(f'Master solutions time: {time.time()-time_init}')
-        time_init = time.time()
-        solutions_df = self.export_solutions(sol_dict, state_df, bdm, sol_tree, internal_nodes)
-        results_save_name = 'assignments_%s.csv' % str(int(time.time()))
-        solutions_df.to_csv(os.path.join(save_dir, results_save_name), index=False)
+        solution_ixs = [id_to_ix[subtree_id] for node_id in root_partition for subtree_id in nodes[node_id].best_subtree[0]]
+        
+        return self.selected_districts(solution_ixs, cdm)
+        #solutions_df = self.export_solutions(sol_dict, self.state_df, cdm, sol_tree, internal_nodes)
+        
         print(f'Solution export time: {time.time()-time_init}')
     
     def master_solutions_nonlinear(self, args=None):
@@ -237,20 +253,20 @@ class Experiment:
                 raise FileExistsError('tree_time_str is invalid')
             state_df, G, lengths, edge_dists = load_opt_data(self.config['state'], self.config['granularity'])
             n_census_shapes = len(state_df['GEOID'])
-            bdm = make_bdm(tree[1], n_blocks=n_census_shapes)
+            cdm = make_cdm(tree[1], n_cgus=n_census_shapes)
         else:
             tree = args['tree']
-            bdm = args['bdm']
+            cdm = args['cdm']
             state_df = args['state_df']
             save_dir = args['save_dir']
         internal_nodes = tree[0]
         leaf_nodes = tree[1]
         #district_df_of_tree_dir(save_dir)
-        #maj_min=majority_minority(bdm, state_df)
+        #maj_min=majority_minority(cdm, state_df)
         #print(maj_min)
         #print(sum(maj_min))
-        cost_coeffs = majority_black(bdm, state_df)
-        maj_min = np.zeros((len(bdm.T)))
+        cost_coeffs = majority_black(cdm, state_df)
+        maj_min = np.zeros((len(cdm.T)))
         bb = np.zeros((len(cost_coeffs)))
         
         root_map, ix_to_id = make_root_partition_to_leaf_map(leaf_nodes, internal_nodes)
@@ -261,7 +277,7 @@ class Experiment:
             '''
             relax_start_t = time.thread_time()
             model_relaxed, dvars_relaxed = make_master(self.config['n_districts'], 
-                                        bdm[:, leaf_slice], 
+                                        cdm[:, leaf_slice], 
                                         cost_coeffs[leaf_slice], 
                                         maj_min[leaf_slice], 
                                         bb[leaf_slice], 
@@ -288,7 +304,7 @@ class Experiment:
             '''
             start_t = time.thread_time()
             model, dvars = make_master(self.config['n_districts'], 
-                                        bdm[:, leaf_slice], 
+                                        cdm[:, leaf_slice], 
                                         cost_coeffs[leaf_slice], 
                                         maj_min[leaf_slice], 
                                         bb[leaf_slice], 
@@ -353,18 +369,25 @@ class Experiment:
             #     if constraintm.slack!=0:
             #         print(str(k)+": "+str(int(constraintm.slack)))
             #         print(dvars[k])
-            solutions_df = self.export_solutions(sol_dict, state_df, bdm, sol_tree, internal_nodes)
+            solutions_df = self.export_solutions(sol_dict, state_df, cdm, sol_tree, internal_nodes)
             results_save_name = 'assignments_%s.csv' % str(int(time.time()))
             solutions_df.to_csv(os.path.join(save_dir, results_save_name), index=False)
         print(f'\nTotal time for master problems: {time.thread_time()-initial_t}')
     
-    def export_solutions(self, sol_dict, state_df, bdm, sol_tree, internal_nodes):
+    def selected_districts(self, solution_ixs, cdm):
+        selected_districts = np.zeros(self.n_cgus)
+        for district in range(len(solution_ixs)):
+            for cgu, cgu_in_district in enumerate(cdm.T[solution_ixs[district]]):
+                if cgu_in_district: selected_districts[cgu]=district
+        return selected_districts
+        
+    def export_solutions(self, sol_dict, state_df, cdm, sol_tree, internal_nodes):
         """
         Creates a dataframe with each block matched to a district based on the IP solution
         Args:
             solutions: (dict) of solutions outputted by IP
             state_df: (pd DataFrame) with state data
-            bdm: (np.array) n x d matrix where a_ij = 1 when block i appears in district j.
+            cdm: (np.array) n x d matrix where a_ij = 1 when block i appears in district j.
             sol_tree: list of SHPNodes representing the leaf nodes and their ancestors #TODO make this work for multiple trials
 
         Returns: Dataframe mapping GEOID to district assignments
@@ -372,18 +395,13 @@ class Experiment:
         """
         solutions_df = pd.DataFrame()
         solutions_df['GEOID'] = state_df['GEOID']
-        selected_dists = np.zeros(state_df.shape[0])
 
         print('begin export solutions')
 
         for sol_idx in range(len(sol_dict)):
             solution_ixs = sol_dict[sol_idx]['solution_ixs']
-            for i in range(len(solution_ixs)):
-                for index, j in enumerate(bdm.T[solution_ixs[i]]):
-                    if j==1: selected_dists[index]=i
-            #print(selected_dists)
             col_title = 'District'+str(sol_idx)
-            solutions_df[col_title] = selected_dists
+            solutions_df[col_title] = self.selected_districts(solution_ixs, cdm)
 
         #add a column parent which tells us this block's parent's center IF it is a center for the final tree, or -1 if it is a root for the final tree
         # solutions_df['Parent'] = np.nan
@@ -410,7 +428,7 @@ if __name__ == '__main__':
         'parent_resample_trials': 5, #5 before #TODO 5-10
         'max_sample_tries': 5, # 25 before
         'n_samples': 3, #Should be 3-5 #TODO 10-20
-        'n_root_samples': 1,
+        'n_root_samples': 10,
         'max_n_splits': 2,
         'min_n_splits': 2, 
         'max_split_population_difference': 1.5,
@@ -418,15 +436,20 @@ if __name__ == '__main__':
         'event_logging': False,
         'verbose': False,
         'debug_file': 'debug_file.txt',
-        'save_tree': True
+        'save_tree': True,
+        'exact_partition_range': [2,3,4,5],
+        'maj_black_partition_IP': 'make_partition_IP_MajBlack_approximate',
+        'alpha': 0.001,
+        'epsilon': 0.01
     }
     master_config = {
         'IP_gap_tol': 1e-3,
         'IP_timeout': 10,
         'callback_time_interval': None,
         'cost_coeffs': 'maj_black',
-        'tree_time_str': str(1718831492), #'1718831492',
-        'save_bdm': True
+        'tree_time_str': str(1719991175), #'1718831492',
+        'save_cdms': True,
+        'linear_objective': True
     }
     state_config = {
         'state': 'LA',
@@ -436,7 +459,7 @@ if __name__ == '__main__':
         #'population_tolerance': population_tolerance()*12,
         'results_dir': constants.LOUISIANA_HOUSE_RESULTS_PATH,
         #'partition_IP': 'make_partition_IP',
-        'mode': 'master'
+        'mode': 'both'
     }
     config = {**center_selection_config,
               **tree_config,

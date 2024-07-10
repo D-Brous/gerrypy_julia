@@ -57,13 +57,15 @@ class SHPNode:
         n_distrs = self.n_districts
         n_splits = random.randint(min(config['min_n_splits'], n_distrs),
                                   min(config['max_n_splits'], n_distrs))
+        if n_distrs in config['exact_partition_range']:
+            n_splits = n_distrs
 
         ub = max(math.ceil(config['max_split_population_difference']
                            * n_distrs / n_splits), 2)
         lb = max(math.floor((1 / config['max_split_population_difference'])
                             * n_distrs / n_splits), 1)
 
-        child_n_distrs = np.zeros(n_splits) + lb
+        child_n_distrs = np.zeros(n_splits, dtype='int') + lb
         while int(sum(child_n_distrs)) != n_distrs:
             ix = random.randint(0, n_splits - 1)
             if child_n_distrs[ix] < ub:

@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     results_path = constants.LOUISIANA_HOUSE_RESULTS_PATH
     state_df_path = os.path.join(constants.OPT_DATA_PATH, 'block_group/LA/state_df.csv')
-    for dir in os.listdir(results_path):
+    for dir in sorted(os.listdir(results_path)):
         dir_path = os.path.join(results_path, dir)
         if os.path.isdir(dir_path):
             for file in os.listdir(dir_path):

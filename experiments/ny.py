@@ -64,7 +64,7 @@ class Experiment:
         print(type(trial_results))
         np.save(os.path.join(save_dir, save_name), trial_results)
 
-        bdm = make_bdm(cg.leaf_nodes)
+        bdm = make_cdm(cg.leaf_nodes)
         bdm_df = pd.DataFrame(bdm)
         bdm_df.to_csv(os.path.join(save_dir, csv_save_name), index=False)
         #district_df_of_tree_dir(save_dir)
@@ -99,7 +99,7 @@ def master_solutions(leaf_nodes, internal_nodes, state_df, lengths, G, maj_min):
     Returns: (dict) solution data for each optimal solution.
 
     """
-    bdm = make_bdm(leaf_nodes)
+    bdm = make_cdm(leaf_nodes)
     #cost_coeffs = compactness_coefficients(bdm, state_df, lengths) 
     cost_coeffs = county_split_coefficients(bdm, state_df,G) 
     print(cost_coeffs)

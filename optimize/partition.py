@@ -4,6 +4,7 @@ import numpy as np
 from gurobipy import quicksum
 from gurobipy import Model
 from gurobipy import GRB
+from gurobipy import min_
 
 def make_partition_IP_MajMinReq(costs, connectivity_sets, population, pop_bounds, counties, split_lim, nonwhite_per_block, req_mm):
     """
@@ -456,6 +457,255 @@ def make_partition_IP_Buffalo(costs, connectivity_sets, population, pop_bounds, 
 
     return partition_problem, districts, BinNbds
 
+def make_partition_IP_MajBlack_approximate(costs, connectivity_sets, population, BVAP, pop_bounds, distr_vaps, alpha, epsilon):
+    """
+    Creates the Gurobi model to partition a region.
+    Args:
+        costs: (dict) {center: {tract: cost}} The keys of the outer dict
+            are the only centers that are considered in the partition.
+             I.e. len(lengths) = z.
+        edge_dists: (dict) {center: {tract: hop_distance}} Same as lengths but
+            value is the shortest path hop distance (# edges between i and j)
+        G: (nx.Graph) The block adjacency graph
+        population: (dict) {tract int id: population}
+        pop_bounds: (dict) {center int id: {'lb': district population lower
+            bound, 'ub': tract population upper bound}
+        alpha: (int) The exponential cost term
+
+    Returns: (tuple (Gurobi partition model, model variables as a dict)
+
+    """
+    partition_problem = Model('partition')
+    districts = {}
+    maj_black = {}
+    # Create the variables
+    for center, cgus in costs.items():
+        districts[center] = {}
+        for cgu in cgus:
+            districts[center][cgu] = partition_problem.addVar(
+                vtype=GRB.BINARY,
+                obj=costs[center][cgu]
+            )
+        maj_black[center] = partition_problem.addVar(
+            vtype=GRB.BINARY
+        )
+    
+    # Each tract belongs to exactly one district
+    for j in population:
+        partition_problem.addLConstr(quicksum(districts[i][j] for i in districts
+                                    if j in districts[i]) == 1,
+                           name='exactlyOne')
+    # Population tolerances
+    for i in districts:
+        partition_problem.addLConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           >= pop_bounds[i]['lb'],
+                           name='x%s_minsize' % i)
+
+        partition_problem.addLConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           <= pop_bounds[i]['ub'],
+                           name='x%s_maxsize' % i)
+                           
+    # connectivity
+    for center, sp_sets in connectivity_sets.items():
+        for node, sp_set in sp_sets.items():
+            if center == node:
+                continue
+            partition_problem.addLConstr(districts[center][node] <=
+                               quicksum(districts[center][nbor]
+                                        for nbor in sp_set))
+    
+    # majority black
+    for i in districts:
+        partition_problem.addLConstr(quicksum(2 * districts[i][j] * BVAP[j] for j in districts[i]) >=
+                                    (1 + epsilon) * distr_vaps[i] * maj_black[i])
+
+
+    partition_problem.setObjective(quicksum(alpha * districts[i][j] * costs[i][j]
+                                    for i in costs for j in costs[i]) -
+                                   quicksum(maj_black[i] for i in costs),
+                                   GRB.MINIMIZE)
+    partition_problem.Params.LogToConsole = 0
+    partition_problem.Params.TimeLimit = len(population) / 200
+    partition_problem.update()
+
+    xs = {'districts': districts, 'maj_black': maj_black}
+    return partition_problem, xs
+
+def make_partition_IP_MajBlack_explicit(costs, connectivity_sets, population, BVAP, VAP, pop_bounds, alpha):
+    """
+    Creates the Gurobi model to partition a region.
+    Args:
+        costs: (dict) {center: {tract: cost}} The keys of the outer dict
+            are the only centers that are considered in the partition.
+             I.e. len(lengths) = z.
+        edge_dists: (dict) {center: {tract: hop_distance}} Same as lengths but
+            value is the shortest path hop distance (# edges between i and j)
+        G: (nx.Graph) The block adjacency graph
+        population: (dict) {tract int id: population}
+        pop_bounds: (dict) {center int id: {'lb': district population lower
+            bound, 'ub': tract population upper bound}
+        alpha: (int) The exponential cost term
+
+    Returns: (tuple (Gurobi partition model, model variables as a dict)
+
+    """
+    partition_problem = Model('partition')
+    districts = {}
+    maj_black = {}
+    dummy_vars = {}
+    prods = {}
+    # Create the variables
+    for center, cgus in costs.items():
+        districts[center] = {}
+        prods[center] = {}
+        dummy_vars[center] = {}
+        for cgu in cgus:
+            districts[center][cgu] = partition_problem.addVar(
+                vtype=GRB.BINARY,
+                obj=costs[center][cgu]
+            )
+            prods[center][cgu] = partition_problem.addVar(
+                vtype=GRB.BINARY,
+            )
+            dummy_vars[center][cgu] = partition_problem.addVar(
+                vtype=GRB.BINARY,
+            )
+        maj_black[center] = partition_problem.addVar(
+            vtype=GRB.BINARY
+        )
+    
+    # Each tract belongs to exactly one district
+    for j in population:
+        partition_problem.addLConstr(quicksum(districts[i][j] for i in districts
+                                    if j in districts[i]) == 1,
+                           name='exactlyOne')
+    # Population tolerances
+    for i in districts:
+        partition_problem.addLConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           >= pop_bounds[i]['lb'],
+                           name='x%s_minsize' % i)
+
+        partition_problem.addLConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           <= pop_bounds[i]['ub'],
+                           name='x%s_maxsize' % i)
+                           
+    # connectivity
+    for center, sp_sets in connectivity_sets.items():
+        for node, sp_set in sp_sets.items():
+            if center == node:
+                continue
+            partition_problem.addLConstr(districts[center][node] <=
+                               quicksum(districts[center][nbor]
+                                        for nbor in sp_set))
+    
+    # majority black
+    for i in districts:
+        partition_problem.addLConstr(quicksum(2 * districts[i][j] * BVAP[j] for j in districts[i]) >=
+                                    quicksum(prods[i][j] * VAP[j] for j in districts[i]) + 1)
+        for j in districts[i]:
+            partition_problem.addLConstr(prods[i][j] <= districts[i][j])
+            partition_problem.addLConstr(prods[i][j] <= maj_black[i])
+            partition_problem.addLConstr(prods[i][j] >= districts[i][j] - 1 + dummy_vars[i][j])
+            partition_problem.addLConstr(prods[i][j] >= maj_black[i] - dummy_vars[i][j])
+
+
+    partition_problem.setObjective(quicksum(alpha * districts[i][j] * costs[i][j]
+                                    for i in costs for j in costs[i]) -
+                                   quicksum(maj_black[i] for i in costs),
+                                   GRB.MINIMIZE)
+    partition_problem.Params.LogToConsole = 0
+    partition_problem.Params.TimeLimit = len(population) / 200
+    partition_problem.update()
+
+    xs = {'districts': districts, 'maj_black': maj_black, 'prods': prods}
+    return partition_problem, xs
+
+def make_partition_IP_MajBlack(costs, connectivity_sets, population, BVAP, VAP, pop_bounds, alpha):
+    """
+    Creates the Gurobi model to partition a region.
+    Args:
+        costs: (dict) {center: {tract: cost}} The keys of the outer dict
+            are the only centers that are considered in the partition.
+             I.e. len(lengths) = z.
+        edge_dists: (dict) {center: {tract: hop_distance}} Same as lengths but
+            value is the shortest path hop distance (# edges between i and j)
+        G: (nx.Graph) The block adjacency graph
+        population: (dict) {tract int id: population}
+        pop_bounds: (dict) {center int id: {'lb': district population lower
+            bound, 'ub': tract population upper bound}
+        alpha: (int) The exponential cost term
+
+    Returns: (tuple (Gurobi partition model, model variables as a dict)
+
+    """
+    partition_problem = Model('partition')
+    districts = {}
+    maj_black = {}
+    prods = {}
+    # Create the variables
+    for center, cgus in costs.items():
+        districts[center] = {}
+        prods[center] = {}
+        for cgu in cgus:
+            districts[center][cgu] = partition_problem.addVar(
+                vtype=GRB.BINARY,
+                obj=costs[center][cgu]
+            )
+            prods[center][cgu] = partition_problem.addVar(
+                vtype=GRB.BINARY,
+            )
+        maj_black[center] = partition_problem.addVar(
+            vtype=GRB.BINARY
+        )
+    
+    # Each tract belongs to exactly one district
+    for j in population:
+        partition_problem.addConstr(quicksum(districts[i][j] for i in districts
+                                    if j in districts[i]) == 1,
+                           name='exactlyOne')
+    # Population tolerances
+    for i in districts:
+        partition_problem.addConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           >= pop_bounds[i]['lb'],
+                           name='x%s_minsize' % i)
+
+        partition_problem.addConstr(quicksum(districts[i][j] * population[j]
+                                    for j in districts[i])
+                           <= pop_bounds[i]['ub'],
+                           name='x%s_maxsize' % i)
+                           
+    # connectivity
+    for center, sp_sets in connectivity_sets.items():
+        for node, sp_set in sp_sets.items():
+            if center == node:
+                continue
+            partition_problem.addConstr(districts[center][node] <=
+                               quicksum(districts[center][nbor]
+                                        for nbor in sp_set))
+    
+    # majority black
+    for i in districts:
+        partition_problem.addConstr(quicksum(2 * districts[i][j] * BVAP[j] for j in districts[i]) >=
+                                    quicksum(prods[i][j] * VAP[j] for j in districts[i]) + 1)
+        for j in districts[i]:
+            partition_problem.addConstr(prods[i][j] == min_(districts[i][j], maj_black[i]))
+
+    partition_problem.setObjective(quicksum(alpha * districts[i][j] * costs[i][j]
+                                    for i in costs for j in costs[i]) -
+                                   quicksum(maj_black[i] for i in costs),
+                                   GRB.MINIMIZE)
+    partition_problem.Params.LogToConsole = 0
+    partition_problem.Params.TimeLimit = len(population) / 200
+    partition_problem.update()
+
+    xs = {'districts': districts, 'maj_black': maj_black, 'prods': prods}
+    return partition_problem, xs
+
 def make_partition_IP(costs, connectivity_sets, population, pop_bounds):
     """
     Creates the Gurobi model to partition a region.
@@ -477,12 +727,12 @@ def make_partition_IP(costs, connectivity_sets, population, pop_bounds):
     partition_problem = Model('partition')
     districts = {}
     # Create the variables
-    for center, tracts in costs.items():
+    for center, cgus in costs.items():
         districts[center] = {}
-        for tract in tracts:
-            districts[center][tract] = partition_problem.addVar(
+        for cgu in cgus:
+            districts[center][cgu] = partition_problem.addVar(
                 vtype=GRB.BINARY,
-                obj=costs[center][tract]
+                obj=costs[center][cgu]
             )
     # Each tract belongs to exactly one district
     for j in population:
@@ -517,7 +767,8 @@ def make_partition_IP(costs, connectivity_sets, population, pop_bounds):
     partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
-    return partition_problem, districts
+    xs = {'districts': districts}
+    return partition_problem, xs
 
 def edge_distance_connectivity_sets(edge_distance, G):
     connectivity_set = {}

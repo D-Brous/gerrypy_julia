@@ -80,11 +80,11 @@ def preprocess_tracts(state_abbrev, opt_data_path=constants.OPT_DATA_PATH, year=
     state_df = state_df.join(demo_data)
     state_df = state_df.reset_index()
 
-    shape_list = census_shapes.geometry.to_list()
+    shape_list = cgus.geometry.to_list()
     adj_graph = libpysal.weights.Rook.from_iterable(shape_list).to_networkx()
 
     if not nx.is_connected(adj_graph):
-        adj_graph = connect_components(census_shapes)
+        adj_graph = connect_components(cgus)
 
     edge_dists = dict(nx.all_pairs_shortest_path_length(adj_graph))
 

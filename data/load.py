@@ -17,18 +17,19 @@ import geopandas as gpd
 import constants
 
 
-def load_state_df(state_abbrev):
+def load_state_df(state_abbrev, granularity):
     """
     Args:
         state_abbrev: (str) two letter state abbreviation
+        granularity: (str) granularity of cgus
 
     Returns: (pd.DataFrame) of selected tract level metrics
     """
     state_df_path = os.path.join(constants.OPT_DATA_PATH,
+                                 granularity,
                                  state_abbrev,
                                  'state_df.csv')
-    df = pd.read_csv(state_df_path)
-    return df.sort_values(by='GEOID').reset_index(drop=True)
+    return pd.read_csv(state_df_path)
 
 
 def load_election_df(state_abbrev, custom_mapping='', custom_path=''):
@@ -184,6 +185,29 @@ def load_custom_mapping(state, location):
     old_to_new = pickle.load(open(os.path.join(file_path, 'old_ix_to_new_ix.p'), 'rb'))
     return new_to_old, old_to_new
 
+def load_matrix(filepath):
+    sparse_mtx = sp.sparse.load_npz(filepath)
+    return sparse_mtx.toarray()
+
+def load_object(filepath):
+    with open(filepath, 'rb') as inp:
+        obj = pickle.load(inp)
+    return obj
+
+def load_tree(save_dir):
+    tree = {}
+    for file in os.listdir(os.path.join(save_dir, 'tree')):
+        if file == 'root.pkl':
+            tree[-1] = load_object(os.path.join(save_dir, 'tree', file))
+        else:
+            tree[int(file[12:-4])] = load_object(os.path.join(save_dir, 'tree', file))   
+    return tree
+
+def load_cdms(save_dir):
+    cdms = {}
+    for file in os.listdir(os.path.join(save_dir, 'cdms')):
+        cdms[int(file[5:-4])] = load_object(os.path.join(save_dir, 'cdms', file))   
+    return cdms
 
 def test():
     print("we're in the correct module")

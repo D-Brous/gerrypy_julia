@@ -87,7 +87,7 @@ def run_multi_objective(leaf_nodes, internal_nodes, primary_objective, secondary
 
     k = internal_nodes[0].n_districts
     n = len(internal_nodes[0].area)
-    bdm = make_bdm(leaf_nodes, n)
+    bdm = make_cdm(leaf_nodes, n)
     partition_map = make_root_partition_to_leaf_map(leaf_nodes, internal_nodes)
     shards = compute_pareto_front_shards(k, bdm, partition_map, primary_objective, secondary_objective,
                                          opt_secondary_per_shard, epsilon=epsilon, opt_type=opt_type)

@@ -70,6 +70,19 @@ def cmap_colored_shaded(color_list, num_districts, district_adj_mtx, shading_fac
 def cmap_grayscale(num_districts, black_proportions):
     return ListedColormap([mpl.colormaps['binary'](black_proportions[i]) for i in range(num_districts)])
 
+def cgus_bm_shaded(plan, ax, num_districts, black_proportions, cgus, color_list):
+    cgus.plot(ax=ax)
+
+def cgus_six_colored(plan, ax, num_districts, black_proportions, cgus, color_list):
+    census_shape_neighbors = libpysal.weights.Queen.from_dataframe(cgus)
+    census_shape_adj_mtx, _ = census_shape_neighbors.full()
+    print("before cmap")
+    #cmap = cmap_colored(color_list, len(census_shape_adj_mtx), census_shape_adj_mtx)
+    print("after cmap")
+    cgus.plot(ax=ax, linewidth=1.0)
+    for census_shape in cgus.index:
+        cgus[cgus.index == census_shape].boundary.plot(ax=ax, edgecolor='black', linewidth=0.2)
+
 def districts_six_colored_bm_outlined(plan, ax, num_districts, black_proportions, cgus, color_list):
     maj_black = black_proportions > 0.5
     district_shapes = cgus.dissolve(by=f'District{plan}')
@@ -88,7 +101,7 @@ def districts_six_colored_bm_outlined(plan, ax, num_districts, black_proportions
     for district in maj_black_districts:
         district_shapes[district_shapes.index == district].boundary.plot(ax=ax, edgecolor='black', linewidth=0.2)
 
-def districts_six_colored_bm_shaded(plan, ax, num_districts, black_proportions, cgus, color_list, num_shades=3):
+def districts_six_colored_bp_shaded(plan, ax, num_districts, black_proportions, cgus, color_list, num_shades=3):
     district_shapes = cgus.dissolve(by=f'District{plan}')
     district_neighbors = libpysal.weights.Queen.from_dataframe(district_shapes)
     district_adj_mtx, _ = district_neighbors.full()
@@ -102,22 +115,10 @@ def districts_six_colored_bm_shaded(plan, ax, num_districts, black_proportions, 
     shading_factors = [shading_factor(black_proportions[i]) for i in range(num_districts)]
     #shading_factors = [1 / ((num_shades - math.floor(black_proportions[i] * 2 * (num_shades - 1))) * (black_proportions[i] < 0.5) + (black_proportions[i] >= 0.5)) for i in range(num_districts)]
     cmap = cmap_colored_shaded(color_list, num_districts, district_adj_mtx, shading_factors)
-    cgus.plot(ax=ax, column=f'District{plan}', cmap=cmap, linewidth=1.0)
-
-def cgus_bm_shaded(plan, ax, num_districts, black_proportions, cgus, color_list):
-    cgus.plot(ax=ax)
-
-def cgus_six_colored(plan, ax, num_districts, black_proportions, cgus, color_list):
-    census_shape_neighbors = libpysal.weights.Queen.from_dataframe(cgus)
-    census_shape_adj_mtx, _ = census_shape_neighbors.full()
-    print("before cmap")
-    #cmap = cmap_colored(color_list, len(census_shape_adj_mtx), census_shape_adj_mtx)
-    print("after cmap")
-    cgus.plot(ax=ax, linewidth=1.0)
-    for census_shape in cgus.index:
-        cgus[cgus.index == census_shape].boundary.plot(ax=ax, edgecolor='black', linewidth=0.2)
+    cgus.plot(ax=ax, column=f'District{plan}', cmap=cmap, linewidth=5.0)
+    cgus.boundary.plot(ax=ax, edgecolor='black', linewidth=0.2)
     
-def black_proportions_grayscale(plan, ax, num_districts, black_proportions, cgus, color_list):
+def districts_bp_grayscale(plan, ax, num_districts, black_proportions, cgus, color_list):
     cmap = cmap_grayscale(num_districts, black_proportions)
     cgus.plot(ax=ax, column=f'District{plan}', cmap=cmap, linewidth=1.0)
     plt.colorbar(mpl.cm.ScalarMappable(cmap=mpl.colormaps['binary']), ax=ax)
@@ -163,18 +164,19 @@ def draw_maps(state_abbrev, year, granularity, results_df_path, assignment_time_
         fig.savefig(pdf_path, bbox_inches='tight', format='pdf', dpi=300)
 
 if __name__ == '__main__':
-    results_time_str = '1718831492'
-    assignment_time_str = '1719260871' #'1718830061'
-    num_districts = 105
-    num_plans = 1
+    results_time_str = '1718828674'
+    assignment_time_str = '1718829334'
+
     results_path = os.path.join(constants.LOUISIANA_HOUSE_RESULTS_PATH, 'results_' + results_time_str)
     colors = [[232, 23, 23, 256], [23, 131, 232, 256], [232, 138, 23, 256], [252, 226, 25, 256], [40, 138, 45, 256], [114, 66, 245, 256]]
     color_list = [np.array(color, dtype=float)/256 for color in colors]
+    
     map_funcs = {
-        0: districts_six_colored_bm_outlined,
-        1: districts_six_colored_bm_shaded,
-        2: cgus_bm_shaded,
-        3: cgus_six_colored,
-        4: black_proportions_grayscale
+        0: cgus_bm_shaded,
+        1: cgus_six_colored,
+        2: districts_six_colored_bm_outlined,
+        3: districts_six_colored_bp_shaded,
+        4: districts_bp_grayscale
     }
-    draw_maps('LA', '2010', 'block_group', results_path, assignment_time_str, color_list, map_funcs[4])
+
+    draw_maps('LA', '2010', 'block_group', results_path, assignment_time_str, color_list, map_funcs[3])

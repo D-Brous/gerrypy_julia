@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 import constants
 from data.load import load_state_df, load_election_df
-from analyze.districts import make_bdm, create_district_df
+from analyze.districts import make_cdm, create_district_df
 
 
 def district_df_of_tree_dir(dir_path, states=None):
@@ -32,7 +32,7 @@ def district_df_of_tree_dir(dir_path, states=None):
 
         state_df = load_state_df(state_abbrev)
 
-        block_district_matrix = make_bdm(tree_data['leaf_nodes'], len(state_df))
+        block_district_matrix = make_cdm(tree_data['leaf_nodes'], len(state_df))
         district_df = create_district_df(state_abbrev, block_district_matrix)
         
         district_df.to_csv(os.path.join(dir_path, 'district_dfs', save_name), index=False)
