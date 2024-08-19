@@ -16,14 +16,14 @@ from data.columns import CENSUS_VARIABLE_TO_NAME
 from scipy.spatial.distance import pdist, squareform
 # import dill
 
-def preprocess_tracts(state_abbrev):
+def preprocess_tracts(state):
     """
     Create and save adjacency, pairwise dists, construct state_df
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
     """
 
-    tract_shapes = load_tract_shapes(state_abbrev, constants.ACS_BASE_YEAR)
+    tract_shapes = load_tract_shapes(state, constants.ACS_BASE_YEAR)
     
     state_df = pd.DataFrame({
 
@@ -37,7 +37,7 @@ def preprocess_tracts(state_abbrev):
     # Join location data with demographic data TODO: get demographic data
     demo_data = pd.read_csv(os.path.join(constants.TRACT_DATA_PATH_2020,
                                          '%d_acs5' % constants.ACS_BASE_YEAR,
-                                         '%s_tract.csv' % state_abbrev),
+                                         '%s_tract.csv' % state),
                             low_memory=False)
     demo_data['GEOID'] = demo_data['GEOID'].astype(str).apply(lambda x: x.zfill(11))
     demo_data = demo_data.set_index('GEOID')
@@ -68,7 +68,7 @@ def preprocess_tracts(state_abbrev):
     centroids = state_df[['x', 'y']].values
     plengths = squareform(pdist(centroids))
 
-    save_path = os.path.join(constants.OPT_DATA_PATH_2020, state_abbrev)
+    save_path = os.path.join(constants.OPT_DATA_PATH_2020, state)
     os.makedirs(save_path, exist_ok=True)
 
     state_df.to_csv(os.path.join(save_path, 'state_df.csv'), index=False)

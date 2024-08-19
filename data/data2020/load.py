@@ -17,15 +17,15 @@ import geopandas as gpd
 
 #TODO not sure we need all these since we don't have all this data
 
-def load_state_df(state_abbrev):
+def load_state_df(state):
     """
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
 
     Returns: (pd.DataFrame) of selected tract level metrics
     """
     state_df_path = os.path.join(constants.OPT_DATA_PATH_2020,
-                                 state_abbrev,
+                                 state,
                                  'state_df.csv')
     df = pd.read_csv(state_df_path)
 
@@ -35,22 +35,22 @@ def load_state_df(state_abbrev):
     return df.sort_values(by='GEOID').reset_index(drop=True)
 
 
-def load_election_df(state_abbrev, custom_mapping='', custom_path=''):
+def load_election_df(state, custom_mapping='', custom_path=''):
     """
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
         custom_mapping: (str) location of tract aggregation mapping
             (subdir within OPT_DATA)
 
     Returns: (pd.DataFrame) of estimated votes by election and party for all tracts
     """
     election_df_path = os.path.join(constants.OPT_DATA_PATH_2020,
-                                    custom_path, state_abbrev,
+                                    custom_path, state,
                                     'election_df.csv')
     try:
         df = pd.read_csv(election_df_path)
         if custom_mapping:
-            new_to_old, old_to_new = load_custom_mapping(state_abbrev, custom_mapping)
+            new_to_old, old_to_new = load_custom_mapping(state, custom_mapping)
             df['custom_mapping'] = pd.Series(old_to_new)
             df = df.groupby('custom_mapping').sum()
     except FileNotFoundError:
@@ -58,10 +58,10 @@ def load_election_df(state_abbrev, custom_mapping='', custom_path=''):
     return df  # Indices are equal to state_df integer indices
 
 
-def load_acs(state_abbrev, year=None, county=False):
+def load_acs(state, year=None, county=False):
     """
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
         year: (int) year of ACS survey
         county: (bool) load ACS at the county or tract level
 
@@ -72,24 +72,24 @@ def load_acs(state_abbrev, year=None, county=False):
     year = year if year else constants.ACS_BASE_YEAR
     state_path = os.path.join(base_path,
                               '%s_acs5' % str(year),
-                              '%s_%s.csv' % (state_abbrev, name_extension))
+                              '%s_%s.csv' % (state, name_extension))
     return pd.read_csv(state_path, low_memory=False).sort_values('GEOID').reset_index(drop=True)
 
 
-def load_tract_shapes(state_abbrev, year=None, custom_path=''):
+def load_tract_shapes(state, year=None, custom_path=''):
     """
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
         year: (int) the year of the TIGERLINE shapefiles
 
     Returns: (gpd.GeoDataFrame) of tract shapes
     """
     if custom_path:
-        tract_shapes = gpd.read_file(os.path.join(custom_path, state_abbrev))
+        tract_shapes = gpd.read_file(os.path.join(custom_path, state))
         return tract_shapes.sort_values(by='GEOID').reset_index(drop=True)
     if not year:
         year = constants.ACS_BASE_YEAR
-    shape_fname = state_abbrev
+    shape_fname = state
     tract_shapes = gpd.read_file(os.path.join(constants.CENSUS_SHAPE_PATH_2020,
                                               shape_fname))
     tract_shapes = tract_shapes.to_crs("EPSG:3078")  # meters
@@ -99,16 +99,16 @@ def load_tract_shapes(state_abbrev, year=None, custom_path=''):
     return tract_shapes.sort_values(by='GEOID').reset_index(drop=True)
 
 
-def load_adjacency_graph(state_abbrev):
+def load_adjacency_graph(state):
     adjacency_graph_path = os.path.join(constants.OPT_DATA_PATH_2020,
-                                        state_abbrev, 'G.p')
+                                        state, 'G.p')
     return nx.read_gpickle(adjacency_graph_path)
 
 
-def load_district_shapes(state_abbrev=None, year=2020):
+def load_district_shapes(state=None, year=2020):
     """
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
         year: (int) districts of the desired year
 
     Returns: (gpd.GeoDataFrame) of district shapes
@@ -116,17 +116,17 @@ def load_district_shapes(state_abbrev=None, year=2020):
     path = os.path.join(constants.GERRYPY_BASE_PATH, 'data',
                         'district_shapes', 'cd_' + str(year))
     gdf = gpd.read_file(path).sort_values('GEOID').to_crs("EPSG:3078")  # meters
-    if state_abbrev is not None:
-        state_geoid = str(constants.ABBREV_DICT[state_abbrev][constants.FIPS_IX])
+    if state is not None:
+        state_geoid = str(constants.ABBREV_DICT[state][constants.FIPS_IX])
         return gdf[gdf.STATEFP == state_geoid]
     else:
         return gdf
 
 
-def load_opt_data(state_abbrev, special_input='', use_spt_matrix=False):
+def load_opt_data(state, special_input='', use_spt_matrix=False):
     """
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
         special_input: (str) subdirectory containing specialized inputs
         use_spt_matrix: (bool) load shortest path tree matrix instead of
             shortest path dict
@@ -134,7 +134,7 @@ def load_opt_data(state_abbrev, special_input='', use_spt_matrix=False):
     Returns: (pd.DataFrame, nx.Graph, np.array, dict) tuple of optimization
         data structures
     """
-    data_base_path = os.path.join(constants.OPT_DATA_PATH_2020, special_input, state_abbrev)
+    data_base_path = os.path.join(constants.OPT_DATA_PATH_2020, special_input, state)
     adjacency_graph_path = os.path.join(data_base_path, 'G.p')
     state_df_path = os.path.join(data_base_path, 'state_df.csv')
 

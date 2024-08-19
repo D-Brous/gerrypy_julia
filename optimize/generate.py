@@ -26,8 +26,8 @@ class DefaultCostFunction:
         costs = self.lengths[np.ix_(centers, index)] * ((population / 1000) + 1)
 
         costs **= (1 + random.random())
-        return {center: {index[bix]: cost for bix, cost in enumerate(costs[cix])}
-                for cix, center in enumerate(centers)}
+        return {center: {index[cgu_ix]: cost for cgu_ix, cost in enumerate(costs[center_ix])}
+                for center_ix, center in enumerate(centers)}
 
 def flatten(lis_of_lis):
     return [element for lis in lis_of_lis for element in lis]
@@ -63,29 +63,36 @@ class ColumnGenerator:
                 IP_timeout: (float) maximum seconds to spend solving IP
 
         """
-        state_abbrev = config['state']
-        #print("")
-        #if optimization_data_location=='':
-        #    print("it's empty string")
-        #print("")
-        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev, config['granularity'])
+        self.state = config['state']
+        state_df, G, lengths, edge_dists = load_opt_data(self.state, config['year'], config['granularity'])
         lengths /= 1000
 
-        self.state_abbrev = state_abbrev
-
-        ideal_pop = state_df['population'].values.sum() / config['n_districts']
-        ideal_vap = state_df['VAP'].values.sum() / config['n_districts']
-        max_pop_variation = ideal_pop * config['population_tolerance']
+        #ideal_pop = state_df['population'].values.sum() / config['n_districts']
+        max_pop_variation = config['ideal_pop'] * config['population_tolerance']
 
         config['max_pop_variation'] = max_pop_variation
-        config['ideal_pop'] = ideal_pop
-        config['ideal_vap'] = ideal_vap
+        #config['ideal_pop'] = ideal_pop
 
         self.config = config
+        if self.config['subregion'] is not None:
+            G = nx.subgraph(G, self.config['subregion'])
+            state_df = state_df.loc[self.config['subregion']]
+            #lengths = lengths[np.ix_(self.config['subregion'], self.config['subregion'])]
+            #new_edge_dists = {}
+            #for cgu_ix in self.config['subregion']:
+            #    new_edge_dists[cgu_ix] = {cgu_ix_2: edge_dists[cgu_ix][cgu_ix_2] for cgu_ix_2 in self.config['subregion']}
+            #edge_dists = new_edge_dists
+
         self.G = G
         self.state_df = state_df
         self.lengths = lengths
         self.edge_dists = edge_dists
+
+        #print(self.G)
+        #print(self.state_df)
+        #print(self.lengths)
+        #print(self.edge_dists)
+
 
         self.sample_queue = []
         self.internal_nodes = {}
@@ -101,12 +108,14 @@ class ColumnGenerator:
         self.failed_root_samples = 0
         self.n_infeasible_partitions = np.zeros((self.config['n_root_samples']), dtype=int)
         self.n_successful_partitions = np.zeros((self.config['n_root_samples']), dtype=int)
+        self.n_optimal_partitions = np.zeros((self.config['n_root_samples']), dtype=int)
+        self.n_time_limit_partitions = np.zeros((self.config['n_root_samples']), dtype=int)
         self.n_deleted_nodes = np.zeros((self.config['n_root_samples']), dtype=int)
 
         self.event_list = []
 
         if self.config.get('boundary_type') == 'county':
-            tracts = load_tract_shapes(state_abbrev, custom_path=config.get('custom_shape_path', ''))
+            tracts = load_tract_shapes(self.state, custom_path=config.get('custom_shape_path', ''))
             tracts = tracts.rename(columns={'COUNTYFP20': 'COUNTYFP'})
             self.model_factory = BoundaryPreservationConstraints(
                 tracts, config.get('county_discount_factor', 0.5))
@@ -125,15 +134,16 @@ class ColumnGenerator:
         if self.config['debug_file'] is not None:
             self.debug = True
             self.config['debug_file'].write(f'Logged root node 0 at time {time.thread_time()}\n')
-
+        #self.debug_2 = False
+        #if self.config['debug_file_2'] is not None:
+        #    self.debug_2 = True
+    
     def _assign_id(self):
         self.max_id += 1
         return self.max_id
 
     def retry_sample(self, problem_node, sample_internal_nodes, sample_leaf_nodes, debug=False):
         def get_descendents(node_id):
-            if self.config['verbose']:
-                print('executing get_descendents()')
             direct_descendents = [child for partition in
                                   sample_internal_nodes[node_id].children_ids
                                   for child in partition]
@@ -148,11 +158,8 @@ class ColumnGenerator:
 
         parent.infeasible_children += 1
         if parent.infeasible_children > self.config['parent_resample_trials']:
-            # Failure couldn't be corrected
-            if self.config['verbose']:
-                print(problem_node.area)
+            # Failure couldn't be corrected -- retry from the next node up
             return self.retry_sample(parent, sample_internal_nodes, sample_leaf_nodes, debug=debug)
-            #raise RuntimeError('Unable to sample tree')
 
         branch_ix, branch_ids = parent.get_branch(problem_node.id)
         nodes_to_delete = set()
@@ -178,10 +185,7 @@ class ColumnGenerator:
 
         parent.delete_branch(branch_ix)
         self.sample_queue = [parent] + [n for n in self.sample_queue if n.id not in nodes_to_delete]
-        if self.config['verbose']:
-            print(f'Pruned branch from {parent.id} with {len(nodes_to_delete)}'
-                  f' deleted descendents.')
-
+    
     def generate_root_sample(self):
         """
         Main method for running the generation process.
@@ -192,7 +196,8 @@ class ColumnGenerator:
         sample_incomplete = True
         sample_leaf_nodes = {}
         sample_internal_nodes = {}
-        print('\n----------------Generating root sample number %d------------------\n' % self.current_root_sample)
+        if self.config['verbose']:
+            print('\n----------------Generating root sample number %d------------------\n' % self.current_root_sample)
         while sample_incomplete:
             # For each root partition, we attempt to populate the sample tree
             # If failure in particular root, prune all work from that root
@@ -239,9 +244,10 @@ class ColumnGenerator:
                 self.current_root_sample += 1
                 sample_incomplete = False
             except RuntimeError as error:  # Stop trying on root partition
-                print(f'Root sample failed: {str(error)}')
+                if self.config['verbose']:
+                    print(f'**Root sample failed: {str(error)}**')
                 if self.debug:
-                    self.config['debug_file'].write(f'\n-------------------------------Root sample failed------------------------------- (last node: {node.id})\n')
+                    self.config['debug_file'].write(f'\n-------------------------------Root sample failed------------------------------- (last node: {node.id}; error msg: {str(error)})\n')
                 self.root.children_ids = self.root.children_ids[:-1]
                 self.root.partition_times = self.root.partition_times[:-1]
                 self.failed_root_samples += 1
@@ -265,17 +271,43 @@ class ColumnGenerator:
         if not isinstance(n_samples, int):
             n_samples = int((n_samples // 1) + (random.random() < n_samples % 1))
         while len(samples) < n_samples and n_trials < self.config['max_sample_tries']:
-            partition_start_t = time.time()
-            child_nodes = self.make_partition(area_df, node) 
-            partition_end_t = time.time()
-            if child_nodes:
-                self.n_successful_partitions[self.current_root_sample] += 1
-                samples.append(child_nodes)
-                node.children_ids.append([child.id for child in child_nodes])
-                node.partition_times.append(partition_end_t - partition_start_t)
-            else:
-                self.n_infeasible_partitions[self.current_root_sample] += 1
-                node.n_infeasible_samples += 1
+            children_sizes = node.sample_n_splits_and_child_sizes(self.config)
+            children_centers = OrderedDict(self.select_centers(area_df, children_sizes))
+            sample_obj_values = []
+            sample_partitions_used = []
+            sample_partition_statuses = []
+            #node.partition_obj_values.append([])
+            #node.partitions_used.append([])
+            maj_black_partition_ixs = np.array([-1])
+            if self.config['exact_partition_range'] is not None and node.n_districts in self.config['exact_partition_range']:
+                maj_black_partition_ixs = np.arange(len(self.config['maj_black_partition_IPs']))
+            warm_start = None
+            for maj_black_partition_ix in maj_black_partition_ixs:
+                partition_start_t = time.time()
+                if self.config['use_black_maj_warm_start']:
+                    child_nodes, obj_value, status, warm_start = self.make_partition(area_df, node, children_centers, maj_black_partition_ix, warm_start=warm_start)
+                else:
+                    child_nodes, obj_value, status, warm_start = self.make_partition(area_df, node, children_centers, maj_black_partition_ix, warm_start=None)
+                partition_end_t = time.time()
+                if child_nodes:
+                    self.n_successful_partitions[self.current_root_sample] += 1
+                    samples.append(child_nodes)
+                    node.children_ids.append([child.id for child in child_nodes])
+                    node.partition_times.append(partition_end_t - partition_start_t)
+                    sample_obj_values.append(obj_value)
+                    sample_partitions_used.append(maj_black_partition_ix)
+                    sample_partition_statuses.append(status)
+                    if status == 2:
+                        self.n_optimal_partitions[self.current_root_sample] += 1
+                    elif status == 9:
+                        self.n_time_limit_partitions[self.current_root_sample] += 1
+                else:
+                    self.n_infeasible_partitions[self.current_root_sample] += 1
+                    node.n_infeasible_samples += 1
+            if len(sample_obj_values) > 0:
+                node.partition_obj_values.append(sample_obj_values)
+                node.partitions_used.append(sample_partitions_used)
+                node.partition_statuses.append(sample_partition_statuses)
             n_trials += 1
         children = [node for sample in samples for node in sample]
         if debug:
@@ -287,7 +319,7 @@ class ColumnGenerator:
                     self.config['debug_file'].write(f'    {child.id}, internal, {child.n_districts}, {len(child.area)}\n')
         return children
 
-    def make_partition(self, area_df, node):
+    def make_partition(self, area_df, node, children_centers, maj_black_partition_ix, warm_start=None):
         """
         Using a random seed, attempt one split from a sample tree node.
         Args:
@@ -297,13 +329,11 @@ class ColumnGenerator:
         Returns: (list) of shape nodes for each sub-region in the partition.
 
         """
-        children_sizes = node.sample_n_splits_and_child_sizes(self.config) #TODO
-
-        # dict : {center_ix : child size}
-        children_centers = OrderedDict(self.select_centers(area_df, children_sizes))
-        #print(children_centers)
-
         connectivity = self.config.get('connectivity_constraint', None)
+        G = nx.subgraph(self.G, node.area)
+        edge_dists = {center: nx.shortest_path_length(G, source=center, weight=connectivity)
+                          for center in children_centers}
+        '''
         if not node.is_root:
             G = nx.subgraph(self.G, node.area)
             edge_dists = {center: nx.shortest_path_length(G, source=center, weight=connectivity)
@@ -311,6 +341,7 @@ class ColumnGenerator:
         else:
             G = self.G
             edge_dists = {center: self.edge_dists[center] for center in children_centers}
+        '''
 
         pop_bounds = self.make_pop_bounds(children_centers)
 
@@ -329,20 +360,17 @@ class ColumnGenerator:
                                              area_df.population.to_dict(),
                                              pop_bounds, counties, split_lim, nonwhite_per_block)
         """
-        if self.config['exact_partition_range'] is not None and node.n_districts in self.config['exact_partition_range']:
-            partition_IP_func = self.maj_black_partition_IPs[self.config['maj_black_partition_IP']]
-            if self.config['maj_black_partition_IP'] == 'make_partition_IP_MajBlack_approximate':
-                distr_vaps = {}
-                for center, n_child_districts in children_centers.items():
-                    distr_vaps[center] = self.config['ideal_vap'] * n_child_districts
+        if maj_black_partition_ix != -1:
+            partition_IP_func = self.maj_black_partition_IPs[self.config['maj_black_partition_IPs'][maj_black_partition_ix]]
+            if self.config['maj_black_partition_IPs'][maj_black_partition_ix] == 'make_partition_IP_MajBlack_approximate':
                 partition_IP, xs = partition_IP_func(costs,
                                                     connectivity_sets,
                                                     area_df['population'].to_dict(),
                                                     area_df['BVAP'].to_dict(),
                                                     pop_bounds,
-                                                    distr_vaps,
                                                     self.config['alpha'],
-                                                    self.config['epsilon'])
+                                                    self.config['epsilon'],
+                                                    area_df['VAP'].values.sum() / node.n_districts)
             else:
                 partition_IP, xs = partition_IP_func(costs,
                                                     connectivity_sets,
@@ -364,8 +392,21 @@ class ColumnGenerator:
 
         #if self.config['boundary_type'] == 'county':
         #    self.model_factory.augment_model(partition_IP, xs, area_df.index.values, costs)
+        if warm_start is not None:
+            districts = xs['districts']
+            maj_black = xs['maj_black']
+            prods = xs['prods']
+            for center in districts:
+                center_df = area_df.loc[districts[center].keys()]
+                is_maj_black = center_df['BVAP'].sum() / center_df['VAP'].sum() > 0.5
+                maj_black[center].Start = is_maj_black
+                for cgu in districts[center]:
+                    districts[center][cgu].Start = warm_start[center][cgu]
+                    prods[center][cgu].Start = warm_start[center][cgu] * is_maj_black
 
         partition_IP.Params.MIPGap = self.config['IP_gap_tol']
+        if self.config['use_time_limit']:
+            partition_IP.Params.TimeLimit = len(area_df['population'].to_dict()) / 200
         partition_IP.update()
         partition_IP.optimize()
         districts = xs['districts']
@@ -374,15 +415,12 @@ class ColumnGenerator:
                            for i in children_centers}
             #bins = {i: [k for k in BinCounts[i] if BinCounts[i][k].X > .5]
             #               for i in children_centers}
-            #print(bins)
             feasible = all([nx.is_connected(nx.subgraph(self.G, distr)) for
                             distr in districting.values()])
             if not feasible:
                 print('WARNING: PARTITION NOT CONNECTED')
         except AttributeError:
             feasible = False
-
-        #print(bins)
 
         if self.config['event_logging']:
             if feasible:
@@ -397,26 +435,16 @@ class ColumnGenerator:
                     'centers': children_centers,
                     'feasible': False,
                 })
-
-        if self.config['verbose']:
-            if feasible:
-                #constraintm=partition_IP.getConstrByName('test1')
-                #slack=constraintm.slack
-                #if(slack!=0):
-                #    print(constraintm.slack)
-                objective_value = partition_IP.objVal
-                #print(objective_value)
-                print('successful sample')
-            else:
-                print('infeasible')
         
         if feasible:
-            #print([len(area) for _, area in districting.items()])
-            return [SHPNode(pop_bounds[center]['n_districts'], area, self._assign_id(), node.id, False, center)
-                    for center, area in districting.items()]
+            return ([SHPNode(pop_bounds[center]['n_districts'], area, self._assign_id(), node.id, False, center)
+                    for center, area in districting.items()], 
+                    partition_IP.getObjective().getValue(), 
+                    partition_IP.Status,
+                    {center: {cgu: var.X for cgu, var in xs['districts'][center].items()} for center in xs['districts']})
         else:
             node.n_infeasible_samples += 1
-            return []
+            return ([], 0, partition_IP.Status, None)
 
     def select_centers(self, area_df, children_sizes):
         """
@@ -471,7 +499,10 @@ class ColumnGenerator:
         pop_bounds = {}
         # Make the bounds for an area considering # area districts and tree level
         for center, n_child_districts in children_centers.items():
-            levels_to_leaf = max(math.ceil(math.log2(n_child_districts)), 1)
+            if n_child_districts in self.config['exact_partition_range']:
+                levels_to_leaf = 1
+            else:
+                levels_to_leaf = max(math.ceil(math.log2(n_child_districts)), 1)
             distr_pop = self.config['ideal_pop'] * n_child_districts
 
             ub = distr_pop + pop_deviation / levels_to_leaf
@@ -497,7 +528,7 @@ class ColumnGenerator:
         width = 'w' + str(self.config['n_samples'])
         n_districts = 'ndist' + str(self.config['n_districts'])
         save_time = str(int(time.time()))
-        save_name = '_'.join([self.state_abbrev, n_districtings, n_leaves,
+        save_name = '_'.join([self.state, n_districtings, n_leaves,
                               n_interior, width, n_districts, save_time])
 
         json.dump(self.event_list, open(save_name + '.json', 'w'))

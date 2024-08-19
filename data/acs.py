@@ -25,7 +25,7 @@ def variable_mapping(year, columns=None):
 
 def download_all_county_data(states=None, years=['2018']):
     if not states:
-        states = [str(state_abbrev) for _, state_abbrev, _ in constants.STATE_IDS]
+        states = [str(state) for _, state, _ in constants.STATE_IDS]
     for y in years:
         for state in states:
             download_census_tables(state=state, year=y, granularity='block')
@@ -33,7 +33,7 @@ def download_all_county_data(states=None, years=['2018']):
 
 def download_all_tract_data(states=None, years=['2018']):
     if not states:
-        states = [str(state_abbrev) for _, state_abbrev, _ in constants.STATE_IDS]
+        states = [str(state) for _, state, _ in constants.STATE_IDS]
     for y in years:
         for state in states:
             download_census_tables(state=state, year=y, granularity='tract')
@@ -54,17 +54,16 @@ def download_census_tables(state=None, year=None, granularity='tract'):
     BASE_URL = "https://api.census.gov/data/%s/%s" % (year, DATASET)
 
     if granularity=='block':
-        base_save_dir = constants.BLOCK_DATA_PATH
+        base_save_path = constants.BLOCK_DATA_PATH
     elif granularity=='block_group':
-        base_save_dir = constants.BLOCK_GROUP_DATA_PATH
+        base_save_path = constants.BLOCK_GROUP_DATA_PATH
     elif granularity=='tract':
-        base_save_dir = constants.TRACT_DATA_PATH
+        base_save_path = constants.TRACT_DATA_PATH
     elif granularity=='county':
-        base_save_dir = constants.COUNTY_DATA_PATH
-    #base_save_dir = constants.COUNTY_DATA_PATH if county else constants.TRACT_DATA_PATH
+        base_save_path = constants.COUNTY_DATA_PATH
 
     data_name = year + "_" + DATASET.split("/")[1]
-    path_name = os.path.join(base_save_dir, data_name)
+    path_name = os.path.join(base_save_path, data_name)
     try:
         os.mkdir(path_name)
     except FileExistsError:

@@ -86,7 +86,7 @@ def download_state_shapes(states=None, year=constants.ACS_BASE_YEAR, granularity
             print("%s cached" % state_abbr)
             continue
 
-        dir_name = os.path.join(shapes_dir, "_".join([state_abbr, year]))
+        dir_name = os.path.join(shapes_dir, state_abbr, year)
         try:
             os.mkdir(dir_name)
         except FileExistsError:
@@ -146,7 +146,7 @@ def download_state_places_shapes(states=None, year=constants.ACS_BASE_YEAR):
         if state_code not in states_fips:
             print("%s cached" % state_abbr)
 
-        dir_name = os.path.join(shapes_dir, "_".join([state_abbr, year]))
+        dir_name = os.path.join(shapes_dir, state_abbr, year)
         try:
             os.mkdir(dir_name)
         except FileExistsError:

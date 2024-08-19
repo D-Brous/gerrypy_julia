@@ -36,14 +36,14 @@ def load_county_political_data():
     return county_year_vote_p
 
 
-def preprocess_tracts(state_abbrev, opt_data_path=constants.OPT_DATA_PATH, year=constants.ACS_BASE_YEAR, granularity='tract', use_name_map=True):
+def preprocess_tracts(state, year, granularity, use_name_map=True):
     """
     Create and save adjacency, pairwise dists, construct state_df
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
     """
 
-    cgus = load_cgus(state_abbrev, year=year, granularity=granularity)
+    cgus = load_cgus(state, year, granularity)
     state_df = pd.DataFrame({
         'x': cgus.centroid.x,
         'y': cgus.centroid.y,
@@ -64,7 +64,7 @@ def preprocess_tracts(state_abbrev, opt_data_path=constants.OPT_DATA_PATH, year=
 
     demo_data = pd.read_csv(os.path.join(granularity_path,
                                          '%d_acs5' % year,
-                                         '%s_tract.csv' % state_abbrev),
+                                         '%s_tract.csv' % state),
                             low_memory=False)
     demo_data['GEOID'] = demo_data['GEOID'].astype(str).apply(lambda x: x.zfill(11)) # might need to modify this to accommadte other granularities
     demo_data = demo_data.set_index('GEOID')
@@ -91,7 +91,7 @@ def preprocess_tracts(state_abbrev, opt_data_path=constants.OPT_DATA_PATH, year=
     centroids = state_df[['x', 'y']].values
     plengths = squareform(pdist(centroids))
 
-    save_path = os.path.join(opt_data_path, granularity, state_abbrev)
+    save_path = os.path.join(constants.OPT_DATA_PATH, granularity, state, str(year))
     os.makedirs(save_path, exist_ok=True)
 
     state_df.to_csv(os.path.join(save_path, 'state_df.csv'), index=False)
@@ -100,5 +100,5 @@ def preprocess_tracts(state_abbrev, opt_data_path=constants.OPT_DATA_PATH, year=
     pickle.dump(edge_dists, open(os.path.join(save_path, 'edge_dists.p'), 'wb'))
 
 if __name__ == '__main__':
-    preprocess_tracts('LA', year=2010, granularity='block_group', use_name_map=False)
+    preprocess_tracts('LA', 2010, 'block_group', use_name_map=False)
     #preprocess_tracts('LA', year=2010, granularity='tract')

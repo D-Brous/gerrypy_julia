@@ -24,7 +24,7 @@ def variable_mapping(year, columns=None):
 
 def download_all_county_data(states=None, years=['2020']):
     if not states:
-        states = [str(state_abbrev) for _, state_abbrev, _ in constants.STATE_IDS]
+        states = [str(state) for _, state, _ in constants.STATE_IDS]
     for y in years:
         for state in states:
             download_census_tables(state=state, year=y, county=True)
@@ -32,7 +32,7 @@ def download_all_county_data(states=None, years=['2020']):
 
 def download_all_tract_data(states=None, years=['2020']):
     if not states:
-        states = [str(state_abbrev) for _, state_abbrev, _ in constants.STATE_IDS]
+        states = [str(state) for _, state, _ in constants.STATE_IDS]
     for y in years:
         for state in states:
             download_census_tables(state=state, year=y, county=False)

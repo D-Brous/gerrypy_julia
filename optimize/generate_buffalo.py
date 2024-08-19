@@ -70,13 +70,13 @@ class ColumnGenerator:
                 IP_timeout: (float) maximum seconds to spend solving IP
 
         """
-        state_abbrev = config['state']
+        state = config['state']
         optimization_data_location = config.get('optimization_data', '')
         state_df, G, lengths, edge_dists = load_opt_data(
                                                          special_input=optimization_data_location)
         lengths /= 1000
 
-        self.state_abbrev = state_abbrev
+        self.state = state
 
         ideal_pop = state_df.TOTAL_ADJ.values.sum() / config['n_districts']
         max_pop_variation = ideal_pop * config['population_tolerance']
@@ -400,7 +400,7 @@ class ColumnGenerator:
         width = 'w' + str(self.config['n_samples'])
         n_districts = 'ndist' + str(self.config['n_districts'])
         save_time = str(int(time.time()))
-        save_name = '_'.join([self.state_abbrev, n_districtings, n_leaves,
+        save_name = '_'.join([self.state, n_districtings, n_leaves,
                               n_interior, width, n_districts, save_time])
 
         json.dump(self.event_list, open(save_name + '.json', 'w'))

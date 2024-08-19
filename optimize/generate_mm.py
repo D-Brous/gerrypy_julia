@@ -73,13 +73,13 @@ class ColumnGenerator:
                 IP_timeout: (float) maximum seconds to spend solving IP
 
         """
-        state_abbrev = config['state']
+        state = config['state']
         optimization_data_location = config.get('optimization_data', '')
-        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev=state_abbrev,
+        state_df, G, lengths, edge_dists = load_opt_data(state=state,
                                                          special_input=optimization_data_location)
         lengths /= 1000
 
-        self.state_abbrev = state_abbrev
+        self.state = state
 
         ideal_pop = state_df.population.values.sum() / config['n_districts']
         max_pop_variation = ideal_pop * config['population_tolerance']
@@ -107,7 +107,7 @@ class ColumnGenerator:
         self.event_list = []
 
         if self.config.get('boundary_type') == 'county':
-            tracts = load_tract_shapes(state_abbrev, custom_path=config.get('custom_shape_path', ''))
+            tracts = load_tract_shapes(state, custom_path=config.get('custom_shape_path', ''))
             tracts = tracts.rename(columns={'COUNTYFP20': 'COUNTYFP'})
             self.model_factory = BoundaryPreservationConstraints(
                 tracts, config.get('county_discount_factor', 0.5))
@@ -434,7 +434,7 @@ class ColumnGenerator:
         width = 'w' + str(self.config['n_samples'])
         n_districts = 'ndist' + str(self.config['n_districts'])
         save_time = str(int(time.time()))
-        save_name = '_'.join([self.state_abbrev, n_districtings, n_leaves,
+        save_name = '_'.join([self.state, n_districtings, n_leaves,
                               n_interior, width, n_districts, save_time])
 
         json.dump(self.event_list, open(save_name + '.json', 'w'))

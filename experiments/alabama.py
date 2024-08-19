@@ -75,7 +75,7 @@ class Experiment:
         bdm_df.to_csv(os.path.join(save_dir, csv_save_name), index=False)
         #district_df_of_tree_dir(save_dir)
 
-        state_df, G, lengths, edge_dists = load_opt_data(state_abbrev='AL')
+        state_df, G, lengths, edge_dists = load_opt_data(state='AL')
 
         maj_min=majority_minority(bdm, state_df)
         bb=black_belt(bdm, state_df)

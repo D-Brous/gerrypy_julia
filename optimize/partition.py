@@ -129,7 +129,7 @@ def make_partition_IP_MajMinReq(costs, connectivity_sets, population, pop_bounds
                                     for i in costs for j in costs[i])-1000000*quicksum(m[j] for j in districts),
                            GRB.MINIMIZE)
     partition_problem.Params.LogToConsole = 0
-    partition_problem.Params.TimeLimit = len(population) / 200
+    #partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
     return partition_problem, districts, BinCounts
@@ -252,7 +252,7 @@ def make_partition_IP_County_MajMin(costs, connectivity_sets, population, pop_bo
                                     for i in costs for j in costs[i])-1000000*quicksum(m[j] for j in districts),
                            GRB.MINIMIZE)
     partition_problem.Params.LogToConsole = 0
-    partition_problem.Params.TimeLimit = len(population) / 200
+    #partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
     return partition_problem, districts, BinCounts,m
@@ -355,7 +355,7 @@ def make_partition_IP_County(costs, connectivity_sets, population, pop_bounds, c
                                     for i in costs for j in costs[i]),
                            GRB.MINIMIZE)
     partition_problem.Params.LogToConsole = 0
-    partition_problem.Params.TimeLimit = len(population) / 200
+    #partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
     return partition_problem, districts, BinCounts
@@ -452,12 +452,12 @@ def make_partition_IP_Buffalo(costs, connectivity_sets, population, pop_bounds, 
                                     for i in costs for j in costs[i]),
                            GRB.MINIMIZE)
     partition_problem.Params.LogToConsole = 0
-    partition_problem.Params.TimeLimit = len(population) / 200
+    #partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
     return partition_problem, districts, BinNbds
 
-def make_partition_IP_MajBlack_approximate(costs, connectivity_sets, population, BVAP, pop_bounds, distr_vaps, alpha, epsilon):
+def make_partition_IP_MajBlack_approximate(costs, connectivity_sets, population, BVAP, pop_bounds, alpha, epsilon, ideal_vap):
     """
     Creates the Gurobi model to partition a region.
     Args:
@@ -519,7 +519,7 @@ def make_partition_IP_MajBlack_approximate(costs, connectivity_sets, population,
     # majority black
     for i in districts:
         partition_problem.addLConstr(quicksum(2 * districts[i][j] * BVAP[j] for j in districts[i]) >=
-                                    (1 + epsilon) * distr_vaps[i] * maj_black[i])
+                                    (1 + epsilon) * ideal_vap * maj_black[i])
 
 
     partition_problem.setObjective(quicksum(alpha * districts[i][j] * costs[i][j]
@@ -527,7 +527,7 @@ def make_partition_IP_MajBlack_approximate(costs, connectivity_sets, population,
                                    quicksum(maj_black[i] for i in costs),
                                    GRB.MINIMIZE)
     partition_problem.Params.LogToConsole = 0
-    partition_problem.Params.TimeLimit = len(population) / 200
+    #partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
     xs = {'districts': districts, 'maj_black': maj_black}
@@ -618,7 +618,7 @@ def make_partition_IP_MajBlack_explicit(costs, connectivity_sets, population, BV
                                    quicksum(maj_black[i] for i in costs),
                                    GRB.MINIMIZE)
     partition_problem.Params.LogToConsole = 0
-    partition_problem.Params.TimeLimit = len(population) / 200
+    #partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
     xs = {'districts': districts, 'maj_black': maj_black, 'prods': prods}
@@ -700,7 +700,7 @@ def make_partition_IP_MajBlack(costs, connectivity_sets, population, BVAP, VAP, 
                                    quicksum(maj_black[i] for i in costs),
                                    GRB.MINIMIZE)
     partition_problem.Params.LogToConsole = 0
-    partition_problem.Params.TimeLimit = len(population) / 200
+    #partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
     xs = {'districts': districts, 'maj_black': maj_black, 'prods': prods}
@@ -764,7 +764,7 @@ def make_partition_IP(costs, connectivity_sets, population, pop_bounds):
                                     for i in costs for j in costs[i]),
                            GRB.MINIMIZE)
     partition_problem.Params.LogToConsole = 0
-    partition_problem.Params.TimeLimit = len(population) / 200
+    #partition_problem.Params.TimeLimit = len(population) / 200
     partition_problem.update()
 
     xs = {'districts': districts}
@@ -826,7 +826,7 @@ def make_partition_IP_vectorized(cost_coeffs, spt_matrix, population, pop_bounds
                                  for c in range(n_centers))
 
     partition_problem.Params.LogToConsole = 0
-    partition_problem.Params.TimeLimit = len(population) / 20
+    #partition_problem.Params.TimeLimit = len(population) / 20
     partition_problem.update()
 
     return partition_problem, assignment

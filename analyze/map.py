@@ -8,11 +8,36 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import constants
 import numpy as np
-from data.load import load_cgus
+from data.load import *
 from matplotlib.colors import ListedColormap
 import libpysal
 import random
 import math
+from analyze.maj_black import bvap_prop
+
+# define an object that will be used by the legend
+class MulticolorPatch(object):
+    def __init__(self, colors):
+        self.colors = colors
+        
+# define a handler for the MulticolorPatch object
+class MulticolorPatchHandler(object):
+    def legend_artist(self, legend, orig_handle, fontsize, handlebox):
+        width, height = handlebox.width, handlebox.height
+        patches = []
+        for i, c in enumerate(orig_handle.colors):
+            patches.append(plt.Rectangle([width/len(orig_handle.colors) * i - handlebox.xdescent, 
+                                          -handlebox.ydescent],
+                           width / len(orig_handle.colors),
+                           height, 
+                           facecolor=c, 
+                           edgecolor='k',
+                           linewidth=0.2))
+
+        patch = mpl.collections.PatchCollection(patches,match_original=True)
+
+        handlebox.add_artist(patch)
+        return patch
 
 def six_coloring(district_adj_mtx):
     def get_min_degree(adj_mtx):
@@ -67,21 +92,47 @@ def cmap_colored_shaded(color_list, num_districts, district_adj_mtx, shading_fac
     coloring = six_coloring(district_adj_mtx)
     return ListedColormap([color_list[coloring[i]] * np.array([1,1,1,shading_factors[i]]) for i in range(num_districts)])
 
-def cmap_grayscale(num_districts, black_proportions):
-    return ListedColormap([mpl.colormaps['binary'](black_proportions[i]) for i in range(num_districts)])
+def cmap_grayscale(num_proportions, proportions):
+    return ListedColormap([mpl.colormaps['binary'](proportions[i]) for i in range(num_proportions)])
 
-def cgus_bm_shaded(plan, ax, num_districts, black_proportions, cgus, color_list):
-    cgus.plot(ax=ax)
+def cgus_bm_shaded(ax, state_df, cgus, color_list):
+    black_proportions = state_df['BVAP'].to_numpy() / state_df['VAP'].to_numpy()
+    cmap = cmap_grayscale(len(cgus['GEOID']), black_proportions)
+    cgus.plot(ax=ax, cmap=cmap)
+    cgus.boundary.plot(ax=ax, edgecolor='red', linewidth=0.05)
+    plt.colorbar(mpl.cm.ScalarMappable(cmap=mpl.colormaps['binary']), ax=ax)
+
+def cgus_pop_shaded(ax, state_df, cgus, color_list):
+    ideal_pop = state_df['population'].sum() / config['n_districts']
+    pop_proportions = state_df['population'].to_numpy() / ideal_pop
+    cmap = cmap_grayscale(len(cgus['GEOID']), pop_proportions)
+    cgus.plot(ax=ax, cmap=cmap)
+    cgus.boundary.plot(ax=ax, edgecolor='red', linewidth=0.05)
+    plt.colorbar(mpl.cm.ScalarMappable(cmap=mpl.colormaps['binary']), ax=ax)
 
 def cgus_six_colored(plan, ax, num_districts, black_proportions, cgus, color_list):
-    census_shape_neighbors = libpysal.weights.Queen.from_dataframe(cgus)
-    census_shape_adj_mtx, _ = census_shape_neighbors.full()
+    cgu_neighbors = libpysal.weights.Queen.from_dataframe(cgus)
+    cgu_adj_mtx, _ = cgu_neighbors.full()
     print("before cmap")
-    #cmap = cmap_colored(color_list, len(census_shape_adj_mtx), census_shape_adj_mtx)
+    #cmap = cmap_colored(color_list, len(cgu_adj_mtx), cgu_adj_mtx)
     print("after cmap")
     cgus.plot(ax=ax, linewidth=1.0)
-    for census_shape in cgus.index:
-        cgus[cgus.index == census_shape].boundary.plot(ax=ax, edgecolor='black', linewidth=0.2)
+    for cgu in cgus.index:
+        cgus[cgus.index == cgu].boundary.plot(ax=ax, edgecolor='black', linewidth=0.2)
+
+def cgus_highlight_disconnected(plan, ax, num_districts, black_proportions, cgus, color_list):
+    coloring = np.full((3471, 4), 1, dtype=float)
+    geomtypes = cgus.geometry.geom_type.values
+    multipolygon_cgus = [i for i in range(len(geomtypes)) if geomtypes[i]=='MultiPolygon']
+    coloring[multipolygon_cgus] = np.array([227, 25, 25, 256]) / 256
+    cmap = ListedColormap(coloring)
+    cgus.plot(ax=ax, cmap=cmap)
+    cgus.boundary.plot(ax=ax, edgecolor='black', linewidth=0.05)
+    for point, label in zip(cgus.geometry.representative_point(), cgus.index):
+        #circle = plt.Circle((point.x, point.y), 0.2, color='black')
+        #ax.add_patch(circle)
+        if label in multipolygon_cgus:
+            ax.annotate(label, xy=(point.x, point.y), xytext=(0.5, 0.5), textcoords="offset points", fontsize=0.5)
 
 def districts_six_colored_bm_outlined(plan, ax, num_districts, black_proportions, cgus, color_list):
     maj_black = black_proportions > 0.5
@@ -106,77 +157,131 @@ def districts_six_colored_bp_shaded(plan, ax, num_districts, black_proportions, 
     district_neighbors = libpysal.weights.Queen.from_dataframe(district_shapes)
     district_adj_mtx, _ = district_neighbors.full()
     def shading_factor(black_proportion):
-        if 0 <= black_proportion < 0.4:
-            return 1 / 3
-        elif 0.4 <= black_proportion < 0.5:
-            return 2 / 3
-        elif 0.5 <= black_proportion:
+        if 0 <= black_proportion < 0.5:
+            return 1 / 4
+        else:
             return 1
     shading_factors = [shading_factor(black_proportions[i]) for i in range(num_districts)]
     #shading_factors = [1 / ((num_shades - math.floor(black_proportions[i] * 2 * (num_shades - 1))) * (black_proportions[i] < 0.5) + (black_proportions[i] >= 0.5)) for i in range(num_districts)]
     cmap = cmap_colored_shaded(color_list, num_districts, district_adj_mtx, shading_factors)
     cgus.plot(ax=ax, column=f'District{plan}', cmap=cmap, linewidth=5.0)
-    cgus.boundary.plot(ax=ax, edgecolor='black', linewidth=0.2)
+    cgus.boundary.plot(ax=ax, edgecolor='black', linewidth=0.05)
+    for district in district_shapes.index:
+        district_shapes[district_shapes.index == district].boundary.plot(ax=ax, edgecolor='black', linewidth=0.2)
+    '''
+    assignment_dict = assignment_ser_to_dict(cgus[f'District{plan}'])
+    for point, district_id in zip(cgus.geometry.representative_point(), cgus[f'District{plan}']):
+        #circle = plt.Circle((point.x, point.y), 0.2, color='black')
+        #ax.add_patch(circle)
+        label = bvap_prop(assignment_dict[district_id], state_df)
+        ax.annotate(label, xy=(point.x, point.y), xytext=(0.5, 0.5), textcoords="offset points", fontsize=0.5)
     
+    for point in district_shapes.geometry.representative_point():
+        circle = plt.Circle((point.x, point.y), 0.2, color='black')
+        ax.add_patch(circle)
+    '''
+    handles = [MulticolorPatch(color_list), MulticolorPatch([c * np.array([1,1,1,1/4]) for c in color_list])]
+    labels = ['Majority Black', 'Not Majority Black']
+    ax.legend(handles=handles, 
+              labels=labels, 
+              handler_map={MulticolorPatch: MulticolorPatchHandler()},
+              loc='upper right', 
+              labelspacing=0, 
+              fontsize=3,
+              handlelength=15, 
+              handleheight=3, 
+              bbox_to_anchor=(0.95, 0.95))
+
 def districts_bp_grayscale(plan, ax, num_districts, black_proportions, cgus, color_list):
     cmap = cmap_grayscale(num_districts, black_proportions)
     cgus.plot(ax=ax, column=f'District{plan}', cmap=cmap, linewidth=1.0)
     plt.colorbar(mpl.cm.ScalarMappable(cmap=mpl.colormaps['binary']), ax=ax)
 
-def draw_maps(state_abbrev, year, granularity, results_df_path, assignment_time_str, color_list, map_func):
-    cgus = load_cgus(state_abbrev, year=year, granularity=granularity)
-    assignment_exists = False
-    assignment_file = 'assignments_%s.csv' % assignment_time_str
-    for file in os.listdir(results_path):
-        if file==assignment_file:
-            results_df_path = os.path.join(results_path, file)
-            results_df = pd.read_csv(results_df_path)
-            results_df['GEOID'] = results_df['GEOID'].astype(str).apply(lambda x: x.zfill(11))
-            cgus = cgus.merge(results_df, on='GEOID', how='left')
-            num_districts = int(max(results_df['District0'].to_list()))+1
-            num_plans = 0
-            for column_name in results_df.columns.values:
-                if column_name[:8] == 'District':
-                    num_plans += 1
-            assignment_exists = True
-    if not assignment_exists:
-        raise FileExistsError('No file named assignments.csv')
+def draw_cgu_maps(config, color_list, cgu_map_func):
+    cgus = load_cgus(config['state'], config['year'], config['granularity'])
+    state_df = load_state_df(config['state'], config['year'], config['granularity'])
+    fig, ax = plt.subplots()
+    ax.set_axis_off()
+    pdf_path = os.path.join(config['results_path'], f'{cgu_map_func.__name__}.pdf')
+    cgu_map_func(ax, state_df, cgus, color_list)
+    fig.savefig(pdf_path, bbox_inches='tight', format='pdf', dpi=300)
+
+def draw_district_maps(config, assignments_df, color_list, district_map_func, plans=None, highlight_diff=False):
+    cgus = load_cgus(config['state'], config['year'], config['granularity'])
+    save_path = os.path.join(config['results_path'], 'results_' + results_time_str)
+    assignments_df['GEOID'] = assignments_df['GEOID'].astype(str).apply(lambda x: x.zfill(11))
+    cgus = cgus.merge(assignments_df, on='GEOID', how='left')
+    num_districts = int(max(assignments_df['District0'].to_list()))+1
+    num_plans = 0
+    for column_name in assignments_df.columns.values:
+        if column_name[:8] == 'District':
+            num_plans += 1
     
-    state_df_path = os.path.join(constants.OPT_DATA_PATH, os.path.join(granularity, state_abbrev, 'state_df.csv'))
-    state_df = pd.read_csv(state_df_path)
+    state_df = load_state_df(config['state'], config['year'], config['granularity'])
     
-    for plan in range(num_plans):
+    if plans is None:
+        plans = np.arange(num_plans)
+    
+    prev_assignment_dict = None
+    for plan in plans:
         fig, ax = plt.subplots()
         ax.set_axis_off()
-        pdf_path = os.path.join(results_path, f'districting{plan}_{assignment_time_str}_{map_func.__name__}.pdf')
-        black_pop_per_district = np.zeros(num_districts)
-        tot_pop_per_district = np.zeros(num_districts)
-        for i, row in enumerate(results_df.values):
-            district = int(results_df.loc[i, f'District{plan}'])
+        pdf_path = os.path.join(save_path, f'districting{plan}_{assignments_time_str}_{district_map_func.__name__}.pdf')
+        bvap_per_district = np.zeros(num_districts)
+        vap_per_district = np.zeros(num_districts)
+        for i, row in enumerate(assignments_df.values):
+            district = int(assignments_df.loc[i, f'District{plan}'])
             try:
-                black_pop_per_district[district] += int(state_df.loc[i, 'BVAP'])
-                tot_pop_per_district[district] += int(state_df.loc[i, 'VAP'])
+                bvap_per_district[district] += int(state_df.loc[i, 'BVAP'])
+                vap_per_district[district] += int(state_df.loc[i, 'VAP'])
             except IndexError:
                 print(f'District indices for plan {plan} are incorrect')
                 return
-        black_proportions = black_pop_per_district / tot_pop_per_district
-        map_func(plan, ax, num_districts, black_proportions, cgus, color_list)
+        black_proportions = bvap_per_district / vap_per_district
+        if highlight_diff:
+            diff = []
+            curr_assignment_dict = assignment_ser_to_dict(assignments_df[f'District{plan}'])
+            if prev_assignment_dict is not None:
+                for district_id, district_region in curr_assignment_dict.items():
+                    if prev_assignment_dict[district_id] != district_region:
+                        diff.append(district_id)
+            prev_assignment_dict = curr_assignment_dict
+            district_map_func(plan, ax, num_districts, black_proportions, cgus, color_list)
+            district_shapes = cgus.dissolve(by=f'District{plan}')
+            for point in district_shapes.loc[diff].geometry.representative_point():
+                circle = plt.Circle((point.x, point.y), 0.2, color='black')
+                ax.add_patch(circle)
+            '''
+            for point, district_id in zip(district_shapes.geometry.representative_point(), district_shapes.index):
+                #circle = plt.Circle((point.x, point.y), 0.2, color='black')
+                #ax.add_patch(circle)
+                label = bvap_prop(curr_assignment_dict[district_id], state_df)
+                ax.annotate(label, xy=(point.x, point.y), xytext=(0.5, 0.5), textcoords="offset points", fontsize=0.5)
+            '''
+        else:
+            district_map_func(plan, ax, num_districts, black_proportions, cgus, color_list)
         fig.savefig(pdf_path, bbox_inches='tight', format='pdf', dpi=300)
 
 if __name__ == '__main__':
-    results_time_str = '1718828674'
-    assignment_time_str = '1718829334'
-
-    results_path = os.path.join(constants.LOUISIANA_HOUSE_RESULTS_PATH, 'results_' + results_time_str)
-    colors = [[232, 23, 23, 256], [23, 131, 232, 256], [232, 138, 23, 256], [252, 226, 25, 256], [40, 138, 45, 256], [114, 66, 245, 256]]
-    color_list = [np.array(color, dtype=float)/256 for color in colors]
-    
-    map_funcs = {
+    cgu_map_funcs = {
         0: cgus_bm_shaded,
-        1: cgus_six_colored,
-        2: districts_six_colored_bm_outlined,
-        3: districts_six_colored_bp_shaded,
-        4: districts_bp_grayscale
+        1: cgus_pop_shaded,
+        2: cgus_six_colored,
+        3: cgus_highlight_disconnected,
+    }
+    district_map_funcs = {
+        0: districts_six_colored_bm_outlined,
+        1: districts_six_colored_bp_shaded,
+        2: districts_bp_grayscale
     }
 
-    draw_maps('LA', '2010', 'block_group', results_path, assignment_time_str, color_list, map_funcs[3])
+    results_time_str = '1721243348'  #'1719459163'
+    assignments_time_str = '0' #'1719586752'
+    assignments_df = load_assignments_df(constants.LOUISIANA_HOUSE_RESULTS_PATH, results_time_str, assignments_time_str, results_subdir='post_processing')
+
+    colors = [[232, 23, 23, 256], [23, 131, 232, 256], [232, 138, 23, 256], [252, 226, 25, 256], [40, 138, 45, 256], [114, 66, 245, 256]]
+    color_list = [np.array(color, dtype=float)/256 for color in colors]
+
+    from experiments.louisiana_house import config
+    draw_district_maps(config, assignments_df, color_list, district_map_funcs[1], highlight_diff=True)
+    #draw_cgu_maps(config, color_list, cgu_map_funcs[1])

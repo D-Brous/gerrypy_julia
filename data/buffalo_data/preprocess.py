@@ -19,7 +19,7 @@ def preprocess_tracts():
     """
     Create and save adjacency, pairwise dists, construct state_df
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
     """
 
     tract_shapes = load_tract_shapes()

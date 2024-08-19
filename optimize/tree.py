@@ -27,6 +27,9 @@ class SHPNode:
         self.area = area
         self.children_ids = []
         self.partition_times = []
+        self.partition_obj_values = []
+        self.partitions_used = []
+        self.partition_statuses = []
 
         self.n_infeasible_samples = 0
         self.infeasible_children = 0

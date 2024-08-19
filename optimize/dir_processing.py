@@ -29,17 +29,17 @@ def district_df_of_tree_dir(dir_path, states=None):
         else:
             continue
         start_t = time.time()
-        state_abbrev = state_file[:2]
+        state = state_file[:2]
 
-        state_df = load_state_df(state_abbrev)
+        state_df = load_state_df(state)
 
         block_district_matrix = make_bdm(tree_data['leaf_nodes'], len(state_df))
-        #district_df = create_district_df(state_abbrev, block_district_matrix)
+        #district_df = create_district_df(state, block_district_matrix)
         
         print(nbd_coefficients(block_district_matrix, state_df))
         #district_df.to_csv(os.path.join(dir_path, 'district_dfs', save_name), index=False)
         #elapsed_t = str(round((time.time() - start_t) / 60, 2))
-        #print('Built and saved', state_abbrev, 'in', elapsed_t, 'mins')
+        #print('Built and saved', state, 'in', elapsed_t, 'mins')
 
 
 if __name__ == '__main__':

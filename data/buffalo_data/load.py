@@ -15,10 +15,10 @@ import scipy.sparse as sp
 import pandas as pd
 import geopandas as gpd
 
-def load_state_df(state_abbrev=None):
+def load_state_df(state=None):
     """
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
 
     Returns: (pd.DataFrame) of selected tract level metrics
     """
@@ -30,7 +30,7 @@ def load_state_df(state_abbrev=None):
 def load_tract_shapes(year=None, custom_path=''):
     """
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
         year: (int) the year of the TIGERLINE shapefiles
 
     Returns: (gpd.GeoDataFrame) of tract shapes
@@ -48,7 +48,7 @@ def load_tract_shapes(year=None, custom_path=''):
 def load_opt_data(special_input='', use_spt_matrix=False):
     """
     Args:
-        state_abbrev: (str) two letter state abbreviation
+        state: (str) two letter state abbreviation
         special_input: (str) subdirectory containing specialized inputs
         use_spt_matrix: (bool) load shortest path tree matrix instead of
             shortest path dict

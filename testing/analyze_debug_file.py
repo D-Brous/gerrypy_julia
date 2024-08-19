@@ -13,8 +13,8 @@ time = 1716842385 #1716235478
 
 '''
 experiment_dir = '%s_results_%s' % (name, str(time))
-save_dir = os.path.join(constants.LOUISIANA_HOUSE_RESULTS_PATH, experiment_dir)
-with open(os.path.join(save_dir, debug_filename), 'r') as debug_file:
+save_path = os.path.join(constants.LOUISIANA_HOUSE_RESULTS_PATH, experiment_dir)
+with open(os.path.join(save_path, debug_filename), 'r') as debug_file:
     num_leaf_nodes = 0
     num_internal_nodes = 0
     for line in debug_file:
@@ -49,8 +49,8 @@ class DebugNode:
 
 
 experiment_dir = '%s_results_%s' % (name, str(time))
-save_dir = os.path.join(constants.LOUISIANA_HOUSE_RESULTS_PATH, experiment_dir)
-with open(os.path.join(save_dir, debug_filename), 'r') as debug_file:
+save_path = os.path.join(constants.LOUISIANA_HOUSE_RESULTS_PATH, experiment_dir)
+with open(os.path.join(save_path, debug_filename), 'r') as debug_file:
     num_leaf_nodes = 0
     num_internal_nodes = 0
     num_nodes_in_tree = 0
